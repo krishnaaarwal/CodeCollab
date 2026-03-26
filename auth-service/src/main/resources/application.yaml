@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: auth-service
+  docker:
+    compose:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+logging:
+  level:
+    root: WARN                          # silence all noisy frameworks
+    com.codecollab.auth_service: DEBUG  # only YOUR code is verbose
+    org.springframework.security: INFO  # useful to see security events
+    org.hibernate.SQL: DEBUG            # see actual SQL queries
+  pattern:
+    console: "%d{HH:mm:ss} [%p] %logger{20} - %m%n"
+    #          time        level  class(short)   message
+
+server:
+  port: 8080

@@ -1,0 +1,44 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auth-db
+    password: ${DB_PASSWORD}
+    username: ${DB_USERNAME}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+
+jwt:
+  secretkey: ${JWT_SECRET}
+
+
+# IntelliJ **Run Configuration → Environment Variables** must have:
+#  ```
+#  DB_USERNAME=Krishna
+#  DB_PASSWORD=Postgres123
+#  JWT_SECRET=your_secret
+#  GOOGLE_CLIENT_ID=your_id
+#  GOOGLE_CLIENT_SECRET=your_secret
+#  GITHUB_CLIENT_ID=your_id
+#  GITHUB_CLIENT_SECRET=your_secret
+#  SPRING_PROFILES_ACTIVE=dev
+#  ```
+#
+#---
+#
+### The Mental Model for Debugging Any Spring Error
+#```
+#1. Scroll to bottom of logs
+#2. Find last "Caused by:" → that's your real problem
+#3. Google ONLY that one line
+#4. Fix it, ignore the rest
