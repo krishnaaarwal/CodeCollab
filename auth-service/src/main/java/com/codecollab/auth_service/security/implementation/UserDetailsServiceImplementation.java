@@ -1,4 +1,4 @@
-package com.codecollab.auth_service.implementation;
+package com.codecollab.auth_service.security.implementation;
 
 import com.codecollab.auth_service.entity.UserEntity;
 import com.codecollab.auth_service.repository.UserRepository;

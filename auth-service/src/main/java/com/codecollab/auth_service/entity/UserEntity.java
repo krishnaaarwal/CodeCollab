@@ -1,5 +1,6 @@
 package com.codecollab.auth_service.entity;
 
+import com.codecollab.auth_service.config.type.ProviderType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -26,6 +27,8 @@ public class UserEntity implements UserDetails {
     private String email;
     private String password;
     private String fullname;
+    private String providerId;
+    private ProviderType providerType;
     private LocalDateTime createdAt;
 
     @Override
