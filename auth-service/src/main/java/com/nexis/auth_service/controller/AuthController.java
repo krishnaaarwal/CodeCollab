@@ -18,9 +18,12 @@ API Endpoints:
 
 
 import com.nexis.auth_service.dto.login.*;
+import com.nexis.auth_service.dto.logout.LogoutRequestDto;
+import com.nexis.auth_service.dto.refreshtoken.RefreshTokenRequestDto;
 import com.nexis.auth_service.dto.signup.*;
 import com.nexis.auth_service.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,14 +46,13 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(requestDto));
     }
 
-    @PostMapping("/delete-account")
-    public ResponseEntity<Void> deleteAccount(@RequestBody LoginRequestDto requestDto){
-        authService.deleteAccount(requestDto);
-        return ResponseEntity.noContent().build();
+    @PostMapping("/refreshToken")
+    public ResponseEntity<LoginResponseDto> refreshToken(@RequestBody RefreshTokenRequestDto body){
+        return ResponseEntity.status(HttpStatus.OK).body(authService.refreshToken(body));
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestBody  LoginRequestDto requestDto){
+    public ResponseEntity<Void> logout(@RequestBody LogoutRequestDto requestDto){
         authService.logout(requestDto);
         return ResponseEntity.noContent().build();
     }

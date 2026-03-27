@@ -3,14 +3,20 @@ package com.nexis.auth_service.service.service_implementations;
 import com.nexis.auth_service.config.type.ProviderType;
 import com.nexis.auth_service.dto.login.LoginRequestDto;
 import com.nexis.auth_service.dto.login.LoginResponseDto;
+import com.nexis.auth_service.dto.logout.LogoutRequestDto;
+import com.nexis.auth_service.dto.refreshtoken.RefreshTokenRequestDto;
 import com.nexis.auth_service.dto.signup.SignupRequestDto;
 import com.nexis.auth_service.dto.signup.SignupResponseDto;
+import com.nexis.auth_service.entity.RefreshTokenEntity;
 import com.nexis.auth_service.entity.UserEntity;
 
+import com.nexis.auth_service.exception.RefreshTokenNotFoundException;
 import com.nexis.auth_service.repository.UserRepository;
 import com.nexis.auth_service.service.AuthService;
 import com.nexis.auth_service.util.AuthUtil;
+import com.nexis.auth_service.util.RefreshTokenUtil;
 import lombok.RequiredArgsConstructor;
+import org.apache.catalina.User;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +36,7 @@ public class AuthServiceImplementation implements AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final AuthUtil authUtil;
+    private final RefreshTokenUtil refreshTokenUtil;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
 
@@ -86,13 +94,16 @@ public class AuthServiceImplementation implements AuthService {
         // 2. Principal is the authenticated user (UserDetails implementation)
         UserEntity userEntity = (UserEntity) authentication.getPrincipal();
 
-        //3. Generate Access token for it
+        // 3. Refresh token & Generate token
+        RefreshTokenEntity refreshToken = refreshTokenUtil.generateRefreshToken(userEntity.getId());
         String token = authUtil.generateAccessToken(userEntity);
+
 
         return LoginResponseDto.builder()
                 .id(userEntity.getId())
                 .email(userEntity.getEmail())
                 .jwt(token)
+                .refreshToken(refreshToken.getToken())
                 .build();
     }
 
@@ -127,18 +138,37 @@ public class AuthServiceImplementation implements AuthService {
             throw new BadCredentialsException("This email is already registered with provider : "+emailUser.getProviderType());
         }
 
-        LoginResponseDto loginResponseDto = new LoginResponseDto(user.getId(), user.getEmail(), authUtil.generateAccessToken(user));
+        LoginResponseDto loginResponseDto = new LoginResponseDto(user.getId(), user.getEmail(), authUtil.generateAccessToken(user),refreshTokenUtil.generateRefreshToken(user.getId()).getToken());
 
         return ResponseEntity.ok(loginResponseDto);
     }
 
-    @Override
-    public void deleteAccount(LoginRequestDto requestDto) {
-
-    }
 
     @Override
-    public void logout(LoginRequestDto requestDto) {
+    public void logout(LogoutRequestDto requestDto) {
+        String token = requestDto.getRefreshToken();
 
+        refreshTokenUtil.deleteByToken(token);
     }
+
+    @Transactional
+    @Override
+    public LoginResponseDto refreshToken(RefreshTokenRequestDto body) {
+        RefreshTokenEntity refreshToken = refreshTokenUtil.findToken(body.getToken())
+                .orElseThrow(() -> new RefreshTokenNotFoundException("Refresh token not found: " + body.getToken()));
+
+        refreshToken = refreshTokenUtil.verifyAndRotate(refreshToken);
+        UUID userId = refreshToken.getUserId();
+        UserEntity user = userRepository.getById(userId);
+        String accessToken = authUtil.generateAccessToken(user);
+
+        return LoginResponseDto.builder()
+                .jwt(accessToken)
+                .refreshToken(refreshToken.getToken())
+                .id(user.getId())
+                .email(user.getEmail())
+                .build();
+    }
+
+
 }

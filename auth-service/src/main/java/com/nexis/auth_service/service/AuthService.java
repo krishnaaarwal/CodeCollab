@@ -3,6 +3,8 @@ package com.nexis.auth_service.service;
 
 import com.nexis.auth_service.dto.login.LoginRequestDto;
 import com.nexis.auth_service.dto.login.LoginResponseDto;
+import com.nexis.auth_service.dto.logout.LogoutRequestDto;
+import com.nexis.auth_service.dto.refreshtoken.RefreshTokenRequestDto;
 import com.nexis.auth_service.dto.signup.SignupRequestDto;
 import com.nexis.auth_service.dto.signup.SignupResponseDto;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +19,8 @@ public interface AuthService {
 
     ResponseEntity<LoginResponseDto> handleOauth2LoginRequest(OAuth2User oAuth2User, String registrationId);
 
-    void deleteAccount(LoginRequestDto requestDto);
 
-    void logout(LoginRequestDto requestDto);
+    void logout(LogoutRequestDto requestDto);
+
+    LoginResponseDto refreshToken(RefreshTokenRequestDto body);
 }

@@ -1,13 +1,13 @@
 services:
   db:
     container_name: auth_db
-    image: postgres:16
+    image: postgres:15
     restart: always
     ports:
       - "5433:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Postgres123
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: auth-db
     volumes:
       - "/home/krishna/Development/NexisDB/auth-db:/var/lib/postgresql/data"

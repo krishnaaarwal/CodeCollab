@@ -31,18 +31,18 @@ public class GlobalExceptionHandler {
         ApiError apiError = new ApiError("Invalid Jwt token: "+jwtException.getMessage(),HttpStatus.UNAUTHORIZED);
         return new ResponseEntity<>(apiError,apiError.getHttpStatus());
     }
-//
-//    @ExceptionHandler(RefreshTokenNotFoundException.class)
-//    public ResponseEntity<ApiError> handleRefreshTokenNotFoundException(RefreshTokenNotFoundException exception){
-//        ApiError apiError = new ApiError("Refresh Token not found: "+exception.getMessage(),HttpStatus.UNAUTHORIZED);
-//        return new ResponseEntity<>(apiError,apiError.getHttpStatus());
-//    }
-//
-//    @ExceptionHandler(RefreshTokenExpiredException.class)
-//    public ResponseEntity<ApiError> handleRefreshTokenExpiredException(RefreshTokenExpiredException exception){
-//        ApiError apiError = new ApiError("Refresh Token expired: "+exception.getMessage(),HttpStatus.UNAUTHORIZED);
-//        return new ResponseEntity<>(apiError,apiError.getHttpStatus());
-//    }
+
+    @ExceptionHandler(RefreshTokenNotFoundException.class)
+    public ResponseEntity<ApiError> handleRefreshTokenNotFoundException(RefreshTokenNotFoundException exception){
+        ApiError apiError = new ApiError("Refresh Token not found: "+exception.getMessage(),HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(apiError,apiError.getHttpStatus());
+    }
+
+    @ExceptionHandler(RefreshTokenExpiredException.class)
+    public ResponseEntity<ApiError> handleRefreshTokenExpiredException(RefreshTokenExpiredException exception){
+        ApiError apiError = new ApiError("Refresh Token expired: "+exception.getMessage(),HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(apiError,apiError.getHttpStatus());
+    }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDeniedException(AccessDeniedException accessDeniedException){
