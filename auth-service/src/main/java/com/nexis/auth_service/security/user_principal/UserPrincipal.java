@@ -35,7 +35,7 @@ public class UserPrincipal implements OAuth2User, UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList(); // We can add Roles here later!
+        return Collections.emptyList();
     }
 
     @Override

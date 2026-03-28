@@ -32,16 +32,16 @@ public class JwtFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 
        try {
-           log.info("Incoming request : {}", request.getRequestURI());
+           log.debug("Incoming request : {}", request.getRequestURI());
 
            String requestHeader = request.getHeader("Authorization");
 
-           if (requestHeader == null || !requestHeader.startsWith("Bearer ")) {
+           if (requestHeader == null || !requestHeader.startsWith("Bearer ") || requestHeader.length() <= 7) {
                filterChain.doFilter(request, response);
                return;
            }
 
-           String token = requestHeader.split("Bearer ")[1];
+           String token = requestHeader.substring(7);
            String email = authUtil.getEmailFromToken(token);
 
            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {

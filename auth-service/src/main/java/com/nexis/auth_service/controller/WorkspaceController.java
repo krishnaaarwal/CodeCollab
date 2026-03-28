@@ -6,13 +6,11 @@ import com.nexis.auth_service.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
 /*
 API Endpoints:
         • GET /api/workspaces - List user's workspaces
@@ -21,6 +19,9 @@ API Endpoints:
         • POST /api/workspaces/{id}/members - Add member
  */
 
+
+
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/workspaces")
@@ -29,21 +30,25 @@ public class WorkspaceController {
 
     @GetMapping()
     public ResponseEntity<List<WorkspaceResponseDto>> getUserWorkspaces(){
+        log.info("Fetching all workspaces for the authenticated user");
         return ResponseEntity.status(HttpStatus.OK).body(workspaceService.getUserWorkspaces());
     }
 
     @PostMapping()
     public ResponseEntity<WorkspaceResponseDto> createWorkspace(@RequestBody WorkspaceRequestDto requestDto){
+        log.info("Received request to create new workspace: '{}'", requestDto.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(workspaceService.createWorkspace(requestDto));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<WorkspaceResponseDto> updateWorkspace(@PathVariable UUID id ,@RequestBody WorkspaceRequestDto requestDto){
-        return ResponseEntity.status(HttpStatus.OK).body(workspaceService.updateWorkspace(id,requestDto));
+    public ResponseEntity<WorkspaceResponseDto> updateWorkspace(@PathVariable UUID id, @RequestBody WorkspaceRequestDto requestDto){
+        log.info("Received request to update workspace ID: {}", id);
+        return ResponseEntity.status(HttpStatus.OK).body(workspaceService.updateWorkspace(id, requestDto));
     }
 
     @PostMapping("/{id}/members")
-    public ResponseEntity<WorkspaceResponseDto> addWorkspace(@PathVariable UUID id ,@RequestParam("memberId") UUID memberId){
-        return ResponseEntity.status(HttpStatus.CREATED).body(workspaceService.addWorkspaceMember(id,memberId));
+    public ResponseEntity<WorkspaceResponseDto> addWorkspaceMember(@PathVariable UUID id, @RequestParam("memberId") UUID memberId){
+        log.info("Received request to add user ID: {} to workspace ID: {}", memberId, id);
+        return ResponseEntity.status(HttpStatus.CREATED).body(workspaceService.addWorkspaceMember(id, memberId));
     }
 }

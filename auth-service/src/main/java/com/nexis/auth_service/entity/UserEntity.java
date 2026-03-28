@@ -1,13 +1,11 @@
 package com.nexis.auth_service.entity;
 
 import com.nexis.auth_service.config.type.ProviderType;
+import com.nexis.auth_service.config.type.WorkspaceRole;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
 @Getter
