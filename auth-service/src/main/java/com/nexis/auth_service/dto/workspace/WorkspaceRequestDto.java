@@ -10,7 +10,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class WorkspaceRequestDto {
-    private UUID ownerId;
     private String name;
     private String description;
     private String visibility;

@@ -12,4 +12,6 @@ public interface WorkspaceService {
     WorkspaceResponseDto createWorkspace(WorkspaceRequestDto requestDto);
 
     WorkspaceResponseDto addWorkspaceMember(UUID id,UUID memberId);
+
+    WorkspaceResponseDto updateWorkspace(UUID id, WorkspaceRequestDto requestDto);
 }

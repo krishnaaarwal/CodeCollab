@@ -58,9 +58,11 @@ public class WorkspaceServiceImplementation implements WorkspaceService {
     @Override
     @Transactional
     public WorkspaceResponseDto createWorkspace(WorkspaceRequestDto requestDto) {
-        UUID ownerId = requestDto.getOwnerId();
 
-        UserEntity user = userRepository.findById(ownerId).orElseThrow(()->new IllegalArgumentException("Owner not found with ID: "+ownerId));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        UserEntity user = userPrincipal.getUserEntity();
+        UUID ownerId = user.getId();
 
         WorkspaceEntity workspace = WorkspaceEntity.builder()
                 .ownerId(ownerId)
@@ -95,9 +97,17 @@ public class WorkspaceServiceImplementation implements WorkspaceService {
     @Transactional
     public WorkspaceResponseDto addWorkspaceMember(UUID id,UUID memberId) {
 
+
         WorkspaceEntity workspace = workspaceRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Workspace not found with ID: "+id));
 
         UserEntity user = userRepository.findById(memberId).orElseThrow(()->new IllegalArgumentException("Member not found with ID: "+memberId));
+
+        boolean alreadyMember = workspace.getMembers().stream()
+                .anyMatch(member -> member.getUser().getId().equals(memberId));
+
+        if (alreadyMember) {
+            throw new IllegalStateException("User is already a member of this workspace");
+        }
 
         WorkspaceMemberEntity workspaceMember = WorkspaceMemberEntity.builder()
                 .workspace(workspace)
@@ -110,6 +120,25 @@ public class WorkspaceServiceImplementation implements WorkspaceService {
         user.getWorkspaceMemberList().add(workspaceMember);
 
         return new WorkspaceResponseDto(
+                workspace.getId(),
+                workspace.getOwnerId(),
+                workspace.getName(),
+                workspace.getDescription(),
+                workspace.getVisibility()
+        );
+    }
+
+    @Override
+    @Transactional
+    public WorkspaceResponseDto updateWorkspace(UUID id, WorkspaceRequestDto requestDto) {
+        WorkspaceEntity workspace = workspaceRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Workspace not found with ID: "+id));
+
+        workspace.setName(requestDto.getName());
+        workspace.setDescription(requestDto.getDescription());
+        workspace.setVisibility(requestDto.getVisibility());
+
+        workspaceRepository.save(workspace);
+    return new WorkspaceResponseDto(
                 workspace.getId(),
                 workspace.getOwnerId(),
                 workspace.getName(),
