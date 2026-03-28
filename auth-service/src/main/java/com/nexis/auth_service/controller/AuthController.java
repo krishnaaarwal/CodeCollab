@@ -7,12 +7,8 @@ API Endpoints:
         • POST /api/auth/refresh - Refresh access token
         • POST /api/auth/logout - Logout (invalidate tokens)
         • GET /api/auth/me - Get current user profile
-        • POST /api/auth/oauth/google - Login with Google
-        • POST /api/auth/oauth/github - Login with GitHub
-        • GET /api/workspaces - List user's workspaces
-        • POST /api/workspaces - Create new workspace
-        • PUT /api/workspaces/{id} - Update workspace
-        • POST /api/workspaces/{id}/members - Add member
+        • POST /api/auth/oauth/google - Login with Google -LATER
+        • POST /api/auth/oauth/github - Login with GitHub -LATER
 
  */
 
