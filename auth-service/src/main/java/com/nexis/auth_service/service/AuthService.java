@@ -21,7 +21,7 @@ public interface AuthService {
     ResponseEntity<LoginResponseDto> handleOauth2LoginRequest(OAuth2User oAuth2User, String registrationId);
 
 
-    void logout(LogoutRequestDto requestDto);
+    void logout(LogoutRequestDto requestDto,String authHeader);
 
     LoginResponseDto refreshToken(RefreshTokenRequestDto body);
 

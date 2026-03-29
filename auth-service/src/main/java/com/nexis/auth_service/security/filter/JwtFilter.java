@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -27,6 +28,7 @@ public class JwtFilter extends OncePerRequestFilter {
     private final AuthUtil authUtil;
     private final UserRepository userRepository;
     private final HandlerExceptionResolver handlerExceptionResolver;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -41,7 +43,19 @@ public class JwtFilter extends OncePerRequestFilter {
                return;
            }
 
+
            String token = requestHeader.substring(7);
+
+            // --- THE REDIS CHECK ---
+            // If the token exists as a Key in Redis, it means it's on the Blacklist!
+           if (Boolean.TRUE.equals(redisTemplate.hasKey(token))) {
+               log.warn("Blocked request! Attempted to use a blacklisted token.");
+               // Return a 401 Unauthorized immediately. Do not process the request further.
+               response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+               response.getWriter().write("Token has been revoked. Please log in again.");
+               return;
+           }
+
            String email = authUtil.getEmailFromToken(token);
 
            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {

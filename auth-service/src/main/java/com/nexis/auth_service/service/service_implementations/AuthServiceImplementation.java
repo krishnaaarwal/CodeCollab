@@ -20,6 +20,7 @@ import com.nexis.auth_service.util.AuthUtil;
 import com.nexis.auth_service.util.RefreshTokenUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -45,6 +46,7 @@ public class AuthServiceImplementation implements AuthService {
     private final RefreshTokenUtil refreshTokenUtil;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     public SignupResponseDto signup(SignupRequestDto body) {
@@ -154,10 +156,25 @@ public class AuthServiceImplementation implements AuthService {
     @Override
     @PreAuthorize("isAuthenticated()")
     @Transactional
-    public void logout(LogoutRequestDto requestDto) {
-        String token = requestDto.getRefreshToken();
-        log.info("Processing logout request, deleting refresh token.");
-        refreshTokenUtil.deleteByToken(token);
+    public void logout(LogoutRequestDto requestDto,String authHeader) {
+        // 1. Delete the long-term Refresh Token from PostgreSQL
+        String refreshToken = requestDto.getRefreshToken();
+        log.info("Deleting refresh token from database.");
+        refreshTokenUtil.deleteByToken(refreshToken);
+
+        // 2. Extract the 15-minute Access Token from the header
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String accessToken = authHeader.substring(7);
+
+            // Calculate how much time is left before the token expires anyway
+            // For simplicity, we can just block it for the max lifespan (15 minutes)
+            // because Redis will auto-delete it after 15 minutes!
+
+            log.info("Putting Access Token on the Redis Blacklist for 15 minutes.");
+
+            // Save to Redis: KEY (token), VALUE ("revoked"), DURATION (15), UNIT (Minutes)
+            redisTemplate.opsForValue().set(accessToken, "revoked", 15, java.util.concurrent.TimeUnit.MINUTES);
+        }
     }
 
     @Transactional
