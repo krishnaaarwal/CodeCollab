@@ -2,7 +2,7 @@ package com.nexis.auth_service.controller;
 
 /*
 API Endpoints:
-        • POST /api/auth/register - Signup new user
+        • POST /api/auth/signup - Signup new user
         • POST /api/auth/login - Login with email/password
         • POST /api/auth/refresh - Refresh access token
         • POST /api/auth/logout - Logout (invalidate tokens)
@@ -34,7 +34,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
     private final AuthService authService;
 
-    @PostMapping("/register")
+    @PostMapping("/signup")
     public ResponseEntity<SignupResponseDto> signup(@RequestBody @Valid SignupRequestDto requestDto){
         log.info("Received signup request for email: {}", requestDto.getEmail());
         return ResponseEntity.ok(authService.signup(requestDto));

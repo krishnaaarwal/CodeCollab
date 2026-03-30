@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -54,6 +55,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleConflictExceptions(RuntimeException ex){
         log.warn("Data Conflict: {}", ex.getMessage());
         ApiError apiError = new ApiError(ex.getMessage(), HttpStatus.CONFLICT);
+        return new ResponseEntity<>(apiError, apiError.getHttpStatus());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        // Grab the default message from the very first validation error
+        String errorMessage = ex.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+
+        log.warn("Validation failed: {}", errorMessage);
+        ApiError apiError = new ApiError("Invalid input: " + errorMessage, HttpStatus.BAD_REQUEST);
         return new ResponseEntity<>(apiError, apiError.getHttpStatus());
     }
 

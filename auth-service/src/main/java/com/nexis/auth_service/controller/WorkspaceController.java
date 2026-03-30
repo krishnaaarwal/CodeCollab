@@ -1,5 +1,6 @@
 package com.nexis.auth_service.controller;
 
+import com.nexis.auth_service.dto.workspace.WorkspaceMemberResponseDto;
 import com.nexis.auth_service.dto.workspace.WorkspaceRequestDto;
 import com.nexis.auth_service.dto.workspace.WorkspaceResponseDto;
 import com.nexis.auth_service.service.WorkspaceService;
@@ -15,9 +16,12 @@ import org.springframework.web.bind.annotation.*;
 /*
 API Endpoints:
         • GET /api/workspaces - List user's workspaces
+        * GET /api/workspaces/{id} - get single workspace
         • POST /api/workspaces - Create new workspace
         • PUT /api/workspaces/{id} - Update workspace
         • POST /api/workspaces/{id}/members - Add member
+        * GET /api/workspaces/{id}/members - See all members in workspace
+        * DELETE /api/workspaces/{id}/members/{memberId} - Delete user from workspace
  */
 
 
@@ -33,6 +37,12 @@ public class WorkspaceController {
     public ResponseEntity<List<WorkspaceResponseDto>> getUserWorkspaces(){
         log.info("Fetching all workspaces for the authenticated user");
         return ResponseEntity.status(HttpStatus.OK).body(workspaceService.getUserWorkspaces());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<WorkspaceResponseDto> getWorkspaceById(@PathVariable UUID id){
+        log.info("Fetching workspace for the ID: {}",id);
+        return ResponseEntity.status(HttpStatus.OK).body(workspaceService.getWorkspaceById(id));
     }
 
     @PostMapping()
@@ -52,4 +62,18 @@ public class WorkspaceController {
         log.info("Received request to add user ID: {} to workspace ID: {}", memberId, id);
         return ResponseEntity.status(HttpStatus.CREATED).body(workspaceService.addWorkspaceMember(id, memberId));
     }
+
+    @GetMapping("/{id}/members")
+    public ResponseEntity<List<WorkspaceMemberResponseDto>> getWorkspaceMembers(@PathVariable UUID id){
+        log.info("Received request to fetch members for workspace ID: {}", id);
+        return ResponseEntity.ok(workspaceService.getWorkspaceMembers(id));
+    }
+
+    @DeleteMapping("/{id}/members/{memberId}")
+    public ResponseEntity<Void> deleteUserFromWorkspace(@PathVariable UUID id, @PathVariable UUID memberId){
+        log.info("Received request to delete User ID: {} from Workspace ID: {}", memberId, id);
+        workspaceService.deleteUserFromWorkspace(id, memberId);
+        return ResponseEntity.noContent().build();
+    }
+
 }
