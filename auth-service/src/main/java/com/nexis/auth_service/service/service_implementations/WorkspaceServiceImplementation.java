@@ -34,7 +34,6 @@ import java.util.UUID;
 public class WorkspaceServiceImplementation implements WorkspaceService {
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
-    private final WorkspaceSecurity workspaceSecurity;
 
     @PreAuthorize("isAuthenticated()")
     @Override
