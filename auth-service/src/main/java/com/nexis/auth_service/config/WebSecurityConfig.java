@@ -42,6 +42,8 @@ public class WebSecurityConfig{
                                 "/api/auth/register",    // Only signup is public
                                 "/api/auth/login",       // Only login is public
                                 "/api/auth/refresh",     // Public, because access token is dead!
+                                "/api/auth/forgot-password",
+                                 "/api/auth/reset-password",
                                  "/v3/api-docs/**",       // Let Swagger generate the JSON
                                  "/swagger-ui/**",        // Let Swagger serve the UI CSS/JS
                                  "/swagger-ui.html"       // Let Swagger serve the main page

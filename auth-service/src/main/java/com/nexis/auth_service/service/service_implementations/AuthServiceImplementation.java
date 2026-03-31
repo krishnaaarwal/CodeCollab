@@ -45,6 +45,7 @@ import java.util.UUID;
 public class AuthServiceImplementation implements AuthService {
 
     private final AuthenticationManager authenticationManager;
+    private final EmailService emailService;
     private final AuthUtil authUtil;
     private final RefreshTokenUtil refreshTokenUtil;
     private final PasswordEncoder passwordEncoder;
@@ -233,10 +234,8 @@ public class AuthServiceImplementation implements AuthService {
         String redisKey = "pwd_reset:" + user.getEmail();
         redisTemplate.opsForValue().set(redisKey,otp, Duration.ofMinutes(10));
 
-        log.info("======================================================");
-        log.info("📧 EMAIL SENT TO: {}", user.getEmail());
-        log.info("🔑 YOUR PASSWORD RESET OTP IS: {}", otp);
-        log.info("======================================================");
+        // 3. Send the REAL email!
+        emailService.sendPasswordResetEmail(user.getEmail(), otp);
     }
 
     @Override
