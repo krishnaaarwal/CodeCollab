@@ -6,6 +6,6 @@ import java.util.UUID;
 public record FileRequestDto(
         UUID workspaceId,
         String fileName,
-        BigInteger size
+        Long size
 ) {
 }

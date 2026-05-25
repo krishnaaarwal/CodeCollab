@@ -1,8 +1,0 @@
-spring:
-  application:
-    name: storage-service
-#Eureka client registration
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/

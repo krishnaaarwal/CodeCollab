@@ -16,7 +16,7 @@ public class FileEntity {
     private UUID id;
     private UUID workspaceId;
     private String fileName;
-    private BigInteger fileSize;
+    private Long fileSize;
     private String fileType;
     private Integer currentVersion;
     private String storageKey;

@@ -15,7 +15,7 @@ public class FileVersionEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     private UUID fileId;
-    private BigInteger fileSize;
+    private Long fileSize;
     private Integer version;
     private String storageKey;
     private LocalDateTime createdAt;

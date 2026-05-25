@@ -23,7 +23,7 @@ public class StorageController {
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<FileResponseDto> download(@RequestParam UUID id) {
+    public ResponseEntity<FileResponseDto> download(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(storageService.downloadFile(id));
     }
 
