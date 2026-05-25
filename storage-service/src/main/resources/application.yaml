@@ -1,6 +1,6 @@
 spring:
   application:
-    name: execution-service
+    name: storage-service
 #Eureka client registration
 eureka:
   client:
