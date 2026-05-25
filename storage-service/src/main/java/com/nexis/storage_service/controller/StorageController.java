@@ -18,13 +18,19 @@ public class StorageController {
     private final StorageService storageService;
 
     @PostMapping("/upload")
-    public ResponseEntity<FileResponseDto> upload(@RequestBody FileRequestDto fileRequestDto) {
-        return ResponseEntity.ok(storageService.uploadFile(fileRequestDto));
+    public ResponseEntity<FileResponseDto> upload(
+            @RequestHeader("X-User-Id") String userId,
+            @RequestBody FileRequestDto fileRequestDto) {
+
+        UUID userUuid = UUID.fromString(userId);
+        return ResponseEntity.ok(storageService.uploadFile(fileRequestDto,userUuid));
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<FileResponseDto> download(@PathVariable("id") UUID id) {
-        return ResponseEntity.ok(storageService.downloadFile(id));
+    public ResponseEntity<FileResponseDto> download(@RequestHeader("X-User-Id") String userId,
+                                                    @PathVariable("id") UUID id) {
+        UUID userUuid = UUID.fromString(userId);
+        return ResponseEntity.ok(storageService.downloadFile(id,userUuid));
     }
 
 }

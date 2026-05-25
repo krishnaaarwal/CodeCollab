@@ -6,7 +6,7 @@ import com.nexis.storage_service.dto.FileResponseDto;
 import java.util.UUID;
 
 public interface StorageService {
-    FileResponseDto uploadFile(FileRequestDto fileRequestDto);
+    FileResponseDto uploadFile(FileRequestDto fileRequestDto,UUID userId);
 
-    FileResponseDto downloadFile(UUID id);
+    FileResponseDto downloadFile(UUID id,UUID userId);
 }
