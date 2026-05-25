@@ -31,6 +31,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -81,5 +83,16 @@ public class AuthController {
         log.info("Received reset password request for: {}", requestDto.getEmail());
         authService.resetPassword(requestDto);
         return ResponseEntity.ok("Password successfully reset.");
+    }
+
+    @GetMapping("/internal/workspaces/{workspaceId}/check-member")
+    public ResponseEntity<Boolean> isWorkspaceMember(
+            @PathVariable("workspaceId") UUID workspaceId,
+            @RequestParam("userId") UUID userId) {
+
+        log.info("Received internal membership check request for workspace: {} and user: {}", workspaceId, userId);
+
+        boolean isMember = authService.verifyWorkspaceMembership(workspaceId, userId);
+        return ResponseEntity.ok(isMember);
     }
 }

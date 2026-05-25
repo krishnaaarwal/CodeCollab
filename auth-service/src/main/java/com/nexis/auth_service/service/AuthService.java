@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public interface AuthService {
     SignupResponseDto signup(SignupRequestDto requestDto);
@@ -33,4 +35,6 @@ public interface AuthService {
     void forgotPassword(@Valid ForgotPasswordRequestDto requestDto);
 
     void resetPassword(@Valid ResetPasswordRequestDto requestDto);
+
+    boolean verifyWorkspaceMembership(UUID workspaceId, UUID userId);
 }

@@ -16,6 +16,7 @@ import com.nexis.auth_service.exception.RefreshTokenNotFoundException;
 import com.nexis.auth_service.exception.ResourceNotFoundException;
 import com.nexis.auth_service.exception.UserAlreadyExistsException;
 import com.nexis.auth_service.repository.UserRepository;
+import com.nexis.auth_service.repository.WorkspaceMemberRepository;
 import com.nexis.auth_service.security.user_principal.UserPrincipal;
 import com.nexis.auth_service.service.AuthService;
 import com.nexis.auth_service.util.AuthUtil;
@@ -50,6 +51,7 @@ public class AuthServiceImplementation implements AuthService {
     private final RefreshTokenUtil refreshTokenUtil;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
+    private final WorkspaceMemberRepository memberRepository;
     private final RedisTemplate<String, String> redisTemplate;
 
     @Override
@@ -257,6 +259,14 @@ public class AuthServiceImplementation implements AuthService {
         redisTemplate.delete(redisKey);
 
         log.info("Password successfully reset for user: {}", user.getEmail());
+    }
+
+    @Override
+    @Transactional(readOnly = true) // Optimization: Tells Postgres not to allocate lock tables or WAL for this read
+    public boolean verifyWorkspaceMembership(UUID workspaceId, UUID userId) {
+        log.info("Internal security verification: Checking if user {} belongs to workspace {}", userId, workspaceId);
+
+        return memberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId);
     }
 
 }
