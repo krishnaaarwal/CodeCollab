@@ -14,7 +14,9 @@ import java.util.UUID;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "workspaces")
+@Table(name = "workspaces", indexes = {
+        @Index(name = "idx_workspace_owner", columnList = "owner_id")
+})
 public class WorkspaceEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -30,6 +32,6 @@ public class WorkspaceEntity {
     private String visibility;
 
     @Builder.Default
-    @OneToMany(mappedBy = "workspace",cascade = CascadeType.ALL,orphanRemoval = true)
+    @OneToMany(mappedBy = "workspace", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WorkspaceMemberEntity> members = new ArrayList<>();
 }

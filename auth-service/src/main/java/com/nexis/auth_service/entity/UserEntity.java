@@ -17,22 +17,31 @@ import java.util.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
+@Table(name = "users", indexes = {
+        @Index(name = "idx_user_email", columnList = "email", unique = true),
+        @Index(name = "idx_user_provider", columnList = "providerId, providerType")
+})
 public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    @Column(nullable = false)
+
+    @Column(nullable = false, unique = true)
     private String email;
+
     private String password;
     private String fullname;
     private String avatar;
     private String providerId;
+
+    @Enumerated(EnumType.STRING)
     private ProviderType providerType;
+
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
     @Builder.Default
-    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL,orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<WorkspaceMemberEntity> workspaceMemberList = new ArrayList<>();
 }

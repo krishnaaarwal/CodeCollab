@@ -13,6 +13,15 @@ import java.util.UUID;
 @Getter
 @Setter
 @Builder
+@Table(name = "workspace_members",
+        indexes = {
+                @Index(name = "idx_wm_workspace", columnList = "workspace_id"),
+                @Index(name = "idx_wm_user", columnList = "user_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_workspace_user", columnNames = {"workspace_id", "user_id"})
+        }
+)
 public class WorkspaceMemberEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -23,16 +32,15 @@ public class WorkspaceMemberEntity {
     private WorkspaceEntity workspace;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private WorkspaceRole role;
 
-    @Column(name = "joined_at")
+    @Column(name = "joined_at", nullable = false)
     private LocalDateTime joinedAt;
-
 }
 
 //BADGE ANALOGY:----
