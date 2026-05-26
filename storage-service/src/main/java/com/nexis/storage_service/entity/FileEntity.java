@@ -1,9 +1,6 @@
 package com.nexis.storage_service.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigInteger;
@@ -16,6 +13,12 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Table(name = "files", uniqueConstraints = {
+        @UniqueConstraint(
+                name = "uk_workspace_file",
+                columnNames = {"workspaceId", "fileName"} // Must match your exact Java field names or explicit @Column mappings
+        )
+})
 public class FileEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
