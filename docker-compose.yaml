@@ -12,6 +12,19 @@ services:
     volumes:
       - "/home/krishna/Development/NexisDB/auth-db:/var/lib/postgresql/data"
 
+  execution:
+    container_name: execution_db
+    image: postgres:15
+    restart: always
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Postgres123
+      POSTGRES_DB: execution-db
+    volumes:
+      - "/home/krishna/Development/NexisDB/execution-db:/var/lib/postgresql/data"
+
   redis:
     container_name: nexis_redis
     image: redis:7
@@ -38,7 +51,7 @@ services:
     image: postgres:15
     restart: always
     ports:
-      - "5434:5432"
+      - "5435:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Postgres123
@@ -48,7 +61,7 @@ services:
 
   minio:
     container_name: nexis_minio
-    image: minio/minio:RELEASE.2024-01-11T05-49-32Z
+    image: minio/minio:RELEASE.2025-06-13T11-33-47Z
     ports:
       - "9000:9000" # API Port
       - "9001:9001" # Web Console Port

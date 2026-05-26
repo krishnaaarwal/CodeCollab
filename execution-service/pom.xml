@@ -57,6 +57,12 @@
 		<dependency>
 			<groupId>com.github.docker-java</groupId>
 			<artifactId>docker-java</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>com.github.docker-java</groupId>
+					<artifactId>docker-java-transport-jersey</artifactId>
+				</exclusion>
+			</exclusions>
 			<version>3.5.1</version>
 			<scope>compile</scope>
 		</dependency>

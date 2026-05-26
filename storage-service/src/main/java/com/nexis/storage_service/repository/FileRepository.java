@@ -21,4 +21,6 @@ public interface FileRepository extends JpaRepository<FileEntity, UUID> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT f FROM FileEntity f WHERE f.id = :id")
     Optional<FileEntity> findByIdForUpdate(@Param("id") UUID id);
+
+    Optional<FileEntity> findByWorkspaceIdAndFileName(UUID uuid, String s);
 }
