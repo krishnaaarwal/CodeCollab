@@ -7,6 +7,8 @@ import com.nexis.storage_service.dto.FileResponseDto;
 import com.nexis.storage_service.dto.UploadCompleteDto;
 import com.nexis.storage_service.entity.FileEntity;
 import com.nexis.storage_service.entity.FileVersionEntity;
+import com.nexis.storage_service.exception.FileVersionConflictException;
+import com.nexis.storage_service.exception.UploadIntentNotFoundException;
 import com.nexis.storage_service.repository.FileRepository;
 import com.nexis.storage_service.repository.FileVersionRepository;
 import com.nexis.storage_service.service.StorageService;
@@ -34,9 +36,14 @@ public class StorageServiceImplementation implements StorageService {
     @Override
     @Transactional
     public FileResponseDto uploadFile(FileRequestDto dto, UUID userId) {
-        // 1. Check workspace bounds via Feign
+        log.info("Initiating file upload intent. Workspace: {}, File: {}, User: {}",
+                dto.workspaceId(), dto.fileName(), userId);
+
         boolean hasAccess = authServiceClient.isWorkspaceMember(dto.workspaceId(), userId);
-        if (!hasAccess) throw new SecurityException("Forbidden");
+        if (!hasAccess) {
+            log.warn("Access Denied: User {} attempted unauthorized upload to workspace {}", userId, dto.workspaceId());
+            throw new SecurityException("Forbidden: Invalid workspace membership.");
+        }
 
         Optional<FileEntity> existingFileOpt = fileRepository.findByWorkspaceIdAndFileName(dto.workspaceId(), dto.fileName());
 
@@ -56,6 +63,7 @@ public class StorageServiceImplementation implements StorageService {
 
             // NOTE: Leave existingFile completely alone here. Do not increment or save it yet!
         }
+        log.debug("Pre-calculated storage parameters: File ID: {}, Next Version: {}", fileId, versionToUpload);
 
         String targetStorageKey = "workspaces/" + dto.workspaceId() + "/files/" + fileId + "/version_" + versionToUpload;
 
@@ -80,30 +88,37 @@ public class StorageServiceImplementation implements StorageService {
                 .expiry(15 * 60) // 15 minutes in seconds
                 .build();
 
-        String presignedUrl;
+
         try {
-            presignedUrl = minioClient.getPresignedObjectUrl(args);
+             String presignedUrl = minioClient.getPresignedObjectUrl(args);
+            log.info("Successfully generated presigned PUT URL for File ID: {}, Version: {}", fileId, versionToUpload);
+            return new FileResponseDto(presignedUrl, fileId);
         } catch (Exception e) {
-            log.error("Failed to generate presigned upload URL for storage key: {}", targetStorageKey, e);
+            log.error("S3 SDK Engine failure while crafting upload token for Key: {}", targetStorageKey, e);
             throw new RuntimeException("Storage engine infrastructure failure", e);
         }
 
-
-        return new FileResponseDto(presignedUrl, fileId);
     }
 
     @Transactional
     @Override
     public void uploadComplete(UploadCompleteDto dto, UUID userId) {
 
+        log.info("Received upload confirmation callback from client. File ID: {}, Version: {}, User: {}",
+                dto.fileId(), dto.versionNum(), userId);
+
         String expectedStorageKey = "workspaces/" + dto.workspaceId() + "/files/" + dto.fileId() + "/version_" + dto.versionNum();
 
         FileVersionEntity pendingVersion = fileVersionRepository
                 .findByFileIdAndVersionAndStorageKey(dto.fileId(), dto.versionNum(), expectedStorageKey)
-                .orElseThrow(() -> new IllegalArgumentException("Upload intent log not found or tampered with."));
+                .orElseThrow(() -> {
+                    log.error("Malicious or corrupt confirmation: Intent log missing for File: {}, Version: {}", dto.fileId(), dto.versionNum());
+                    return new UploadIntentNotFoundException("Upload intent log not found or tampered with.");
+                });
 
         if (pendingVersion.getFileStatus() != FileStatus.PENDING) {
-            throw new IllegalStateException("Version state has already been processed.");
+            log.warn("Idempotency Block: Upload complete already processed for File: {}, Version: {}", dto.fileId(), dto.versionNum());
+            throw new FileVersionConflictException("Version state has already been processed.");
         }
 
         pendingVersion.setFileStatus(FileStatus.ACTIVE);
@@ -128,6 +143,7 @@ public class StorageServiceImplementation implements StorageService {
                     .build();
 
             fileRepository.save(brandNewFile);
+            log.info("Successfully provisioned new root file entry. File ID: {}, Name: {}", dto.fileId(), dto.fileName());
         } else {
             FileEntity activeFile = currentFileOpt.get();
 
@@ -137,6 +153,7 @@ public class StorageServiceImplementation implements StorageService {
             activeFile.setUpdatedAt(LocalDateTime.now());
 
             fileRepository.save(activeFile);
+            log.info("Successfully advanced master record pointer to Version: {} for File ID: {}", dto.versionNum(), dto.fileId());
         }
     }
 
@@ -152,12 +169,19 @@ public class StorageServiceImplementation implements StorageService {
     @Transactional(readOnly = true) // Tells Hibernate to bypass dirty checking calculations for performance
     public FileResponseDto downloadFile(UUID fileId, UUID userId) {
 
+      log.info("Processing download link request for File ID: {} by User: {}", fileId, userId);
+
         FileEntity fileEntity = fileRepository.findById(fileId)
-                .orElseThrow(() -> new IllegalArgumentException("File not found."));
+                .orElseThrow(() -> {
+                    log.warn("Download target missing: File ID {} does not exist", fileId);
+                    return new IllegalArgumentException("File not found.");
+                });
 
-
-        boolean hasAccess = authServiceClient.isWorkspaceMember(fileEntity.getWorkspaceId(),userId);
-        if (!hasAccess) throw new SecurityException("Forbidden");
+        boolean hasAccess = authServiceClient.isWorkspaceMember(fileEntity.getWorkspaceId(), userId);
+        if (!hasAccess) {
+            log.warn("Security Breach: User {} attempted unauthorized read access on File: {}", userId, fileId);
+            throw new SecurityException("Forbidden");
+        }
 
 
         String targetStorageKey = fileEntity.getStorageKey();
@@ -169,15 +193,16 @@ public class StorageServiceImplementation implements StorageService {
                 .expiry(15 * 60) // 15 minutes in seconds
                 .build();
 
-        String presignedUrl;
         try {
-            presignedUrl = minioClient.getPresignedObjectUrl(args);
+            String presignedUrl = minioClient.getPresignedObjectUrl(args);
+            log.info("Successfully generated presigned GET URL for File ID: {}, Storage Key: {}", fileId, fileEntity.getStorageKey());
+            return new FileResponseDto(presignedUrl, fileId);
         } catch (Exception e) {
-        log.error("Failed to generate presigned upload URL for storage key: {}", targetStorageKey, e);
-        throw new RuntimeException("Storage engine infrastructure failure", e);
-    }
+            // FIXED: Cleaned your copy-paste upload logging artifact
+            log.error("S3 SDK Engine failure while crafting download token for Key: {}", fileEntity.getStorageKey(), e);
+            throw new RuntimeException("Storage engine infrastructure failure", e);
+        }
 
-        return new FileResponseDto(presignedUrl,fileId);
     }
 
 }

@@ -1,13 +1,9 @@
 package com.nexis.storage_service.entity;
 
 import com.nexis.storage_service.config.type.FileStatus;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
-import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -17,6 +13,12 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "file_versions", indexes = {
+        @Index(
+                name = "idx_file_version_lookup",
+                columnList = "file_id, version" // FIXED: Uses columnList with physical snake_case column names
+        )
+})
 public class FileVersionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
