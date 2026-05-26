@@ -1,5 +1,6 @@
 package com.nexis.storage_service.entity;
 
+import com.nexis.storage_service.config.type.FileStatus;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -24,6 +25,7 @@ public class FileVersionEntity {
     private Long fileSize;
     private Integer version;
     private String storageKey;
+    private FileStatus fileStatus;
     private LocalDateTime createdAt;
     private UUID createdBy;                     //User triggering this save
 }

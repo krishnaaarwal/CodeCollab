@@ -1,6 +1,7 @@
 package com.nexis.storage_service.service.impl;
 
 import com.nexis.storage_service.client.AuthServiceClient;
+import com.nexis.storage_service.config.type.FileStatus;
 import com.nexis.storage_service.dto.FileRequestDto;
 import com.nexis.storage_service.dto.FileResponseDto;
 import com.nexis.storage_service.entity.FileEntity;
@@ -8,107 +9,106 @@ import com.nexis.storage_service.entity.FileVersionEntity;
 import com.nexis.storage_service.repository.FileRepository;
 import com.nexis.storage_service.repository.FileVersionRepository;
 import com.nexis.storage_service.service.StorageService;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MinioClient;
+import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class StorageServiceImplementation implements StorageService {
 
     private final FileRepository fileRepository;
     private final FileVersionRepository fileVersionRepository;
     private final AuthServiceClient authServiceClient;
-//    private final MinioClient minioClient;
+    private final MinioClient minioClient;
 
     @Override
     @Transactional
     public FileResponseDto uploadFile(FileRequestDto dto, UUID userId) {
-
-        // 1. DISTRIBUTED VALIDATION
+        // 1. Check workspace bounds via Feign
         boolean hasAccess = authServiceClient.isWorkspaceMember(dto.workspaceId(), userId);
-        if (!hasAccess) {
-            throw new SecurityException("User does not have access to this workspace.");
-        }
+        if (!hasAccess) throw new SecurityException("Forbidden");
 
-        // 2. TARGET DIRECT QUERY
         Optional<FileEntity> existingFileOpt = fileRepository.findByWorkspaceIdAndFileName(dto.workspaceId(), dto.fileName());
 
-        String targetStorageKey;
         UUID fileId;
-        int nextVersion;
+        int versionToUpload;
 
         if (existingFileOpt.isEmpty()) {
-            // 3. LOGIC FOR A COMPLETELY NEW FILE
-            fileId = UUID.randomUUID(); // Pre-generate ID to compute unique key safely
-            nextVersion = 1;
-            UUID workspaceId = dto.workspaceId();
+            fileId = UUID.randomUUID();
+            versionToUpload = 1;
 
-            // Key format standard: workspaces/{workspaceId}/files/{fileId}/version_{versionNum}
-            targetStorageKey = "workspaces/"+workspaceId+"/files/"+fileId+"/version_"+nextVersion;
-
-            String fileName = dto.fileName();
-            String fileType = "txt"; // Default fallback
-
-            int lastDotIndex = fileName.lastIndexOf('.');
-            if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
-                fileType = fileName.substring(lastDotIndex + 1).toLowerCase();
-            }
-
-            FileEntity fileEntity = FileEntity.builder()
-                    .id(fileId).workspaceId(workspaceId).fileName(dto.fileName()).fileSize(dto.size())
-                    .fileType(fileType)
-                    .currentVersion(nextVersion).storageKey(targetStorageKey)
-                    .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
-
-            fileRepository.save(fileEntity);
-
-            FileVersionEntity fileVersionEntity = FileVersionEntity.builder()
-                    .id(UUID.randomUUID()).fileId(fileId).fileSize(dto.size())
-                    .version(nextVersion).storageKey(targetStorageKey).createdAt(LocalDateTime.now())
-                    .createdBy(userId).build();
-
+            // NOTE: We do NOT insert anything into the files table yet!
+            // If the upload fails, this file simply never existed. No corrupted state.
         } else {
-            // 4. LOGIC FOR UPDATING AN EXISTING FILE (Pessimistic Locking protects this path)
-            FileEntity existingFile = fileRepository.findByIdForUpdate(existingFileOpt.get().getId())
-                    .orElseThrow(() -> new IllegalStateException("File lock contention failed."));
-
+            FileEntity existingFile = existingFileOpt.get();
             fileId = existingFile.getId();
-            nextVersion = existingFile.getCurrentVersion() + 1;
-            UUID workspaceId = existingFile.getWorkspaceId();
+            versionToUpload = existingFile.getCurrentVersion() + 1;
 
-            targetStorageKey = "workspaces/"+workspaceId+"/files/"+fileId+"/version_"+nextVersion;
-
-            existingFile.setCurrentVersion(nextVersion);
-            existingFile.setStorageKey(targetStorageKey);
-            existingFile.setFileSize(dto.size());
-            fileRepository.save(existingFile);
-
-
-            FileVersionEntity fileVersionEntity = FileVersionEntity.builder()
-                    .id(UUID.randomUUID()).fileId(fileId).fileSize(dto.size())
-                    .version(nextVersion).storageKey(targetStorageKey).createdAt(LocalDateTime.now())
-                    .createdBy(userId).build();
-
-            fileVersionRepository.save(fileVersionEntity);
-
+            // NOTE: Leave existingFile completely alone here. Do not increment or save it yet!
         }
 
-        // 5. GENERATE PRESIGNED URL VIA S3 SDK
-        // TODO: Talk to minioClient using targetStorageKey to request a Presigned PUT URL valid for 15 minutes.
-        String presignedUrl = "PRE_SIGNED_URL_FROM_MINIO_CLIENT";
+        String targetStorageKey = "workspaces/" + dto.workspaceId() + "/files/" + fileId + "/version_" + versionToUpload;
+
+        // Log the unverified file instance to disk as PENDING
+        FileVersionEntity pendingVersion = FileVersionEntity.builder()
+                .id(UUID.randomUUID())
+                .fileId(fileId)
+                .fileSize(dto.size())
+                .version(versionToUpload)
+                .storageKey(targetStorageKey)
+                .fileStatus(FileStatus.PENDING) // Securely flagged
+                .createdAt(LocalDateTime.now())
+                .createdBy(userId)
+                .build();
+
+        fileVersionRepository.save(pendingVersion);
+
+        GetPresignedObjectUrlArgs args = GetPresignedObjectUrlArgs.builder()
+                .method(Method.PUT)
+                .bucket("nexis-workspaces")
+                .object(targetStorageKey)
+                .expiry(15 * 60) // 15 minutes in seconds
+                .build();
+
+        String presignedUrl;
+        try {
+            presignedUrl = minioClient.getPresignedObjectUrl(args);
+        } catch (Exception e) {
+            log.error("Failed to generate presigned upload URL for storage key: {}", targetStorageKey, e);
+            throw new RuntimeException("Storage engine infrastructure failure", e);
+        }
+
 
         return new FileResponseDto(presignedUrl, fileId);
     }
 
+    @Transactional
+    public void completeUpload(UUID workspaceId, UUID fileId, int versionNum, String fileName, long sizeBytes) {
+        // 1. Fetch the PENDING historical version record from your repository layer
+        // 2. Flip its status from FileStatus.PENDING to FileStatus.ACTIVE
+
+        // 3. Query your FileRepository using findByIdForUpdate(fileId) to lock the master row
+        // 4. If it's a completely new file (Optional is empty), build and save a brand new FileEntity
+        // 5. If it's an update, advance the version counter, update size, and point the active storageKey to the new version key
+    }
+
     @Override
-    public FileResponseDto downloadFile(UUID id, UUID userId) {
-        return null;
+    @Transactional(readOnly = true) // Tells Hibernate to bypass dirty checking calculations for performance
+    public FileResponseDto downloadFile(UUID fileId, UUID userId) {
+        // 1. Fetch the active master metadata row from your FileRepository
+        // 2. Use your AuthServiceClient Feign client to verify if the current userId has access to that workspace
+
+        // 3. Use GetPresignedObjectUrlArgs with Method.GET to request a download link from MinIO
+        // 4. Return the presigned GET string packaged inside a clean FileResponseDto
     }
 
 
