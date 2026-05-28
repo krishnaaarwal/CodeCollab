@@ -1,8 +1,13 @@
 package com.nexis.recording_service.controller;
 
+import com.nexis.recording_service.config.RabbitMqConfig;
 import com.nexis.recording_service.dto.SessionRequestDto;
 import com.nexis.recording_service.dto.SessionResponseDto;
+import com.nexis.recording_service.entity.SessionEventsEntity;
+import com.nexis.recording_service.repository.SessionRepository;
+import com.nexis.recording_service.service.RecordingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -12,43 +17,42 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.time.Duration;
 import java.util.UUID;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/sessions")
 public class RecordingController {
 
-    private final RedisTemplate<String, String> redisTemplate;
+    private final RecordingService recordingService;
+    private final SessionRepository sessionRepository;
 
     @PostMapping("/start")
     public ResponseEntity<Void> startRecording(@RequestBody SessionRequestDto sessionRequestDto){
-       //THIS WILL GO TO SERVICE LAYER LATER, JUST SHOWING HOW I WILL DO IT!
-        UUID sessionId = UUID.randomUUID();
-        redisTemplate.opsForValue().set("nexis:active-session:"+sessionRequestDto.workspaceId(),sessionId.toString(),Duration.ofHours(16));
-        return null;
+        return ResponseEntity.ok(recordingService.startRecording(sessionRequestDto));
     }
 
     @PostMapping("/{id}/end")
     public ResponseEntity<Void> endRecording(@PathVariable UUID id){
-        return null;
+        return ResponseEntity.ok(recordingService.endRecording(id));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<SessionResponseDto> getSession(@PathVariable UUID id){
-        return null;
+        return ResponseEntity.ok(recordingService.getRecording(id));
     }
 
-    // SKELETAL ARCHITECTURE: NOT FOR COPY-PASTE PRODUCTION USE
     @GetMapping("/{id}/events")
     public ResponseEntity<StreamingResponseBody> getPlayback(@PathVariable UUID id) {
+        if (!sessionRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_NDJSON_VALUE) // Newline Delimited JSON
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_NDJSON_VALUE)
                 .body(outputStream -> {
-                    // 1. Open a low-level, scrolling database cursor (Stream<SessionEventsEntity>)
-                    // 2. Loop through rows one-by-one
-                    // 3. Convert single row to JSON bytes using ObjectMapper
-                    // 4. outputStream.write(bytes); outputStream.flush();
-                    // 5. Automatically free memory per row
+                    recordingService.streamSessionEvents(id, outputStream);
                 });
     }
 
