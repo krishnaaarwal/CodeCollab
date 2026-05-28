@@ -1,6 +1,6 @@
-package com.nexis.recording_service.payload;
+package com.nexis.recording_service.entity.payload;
 
-import com.nexis.websocket_service.config.type.OperationType;
+import com.nexis.recording_service.config.type.OperationType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

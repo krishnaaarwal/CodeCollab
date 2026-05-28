@@ -1,4 +1,4 @@
-package com.nexis.recording_service.payload;
+package com.nexis.recording_service.entity.payload;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,9 +1,8 @@
-package com.nexis.recording_service.consumer;
+package com.nexis.recording_service.service.consumer;
 
 import com.nexis.recording_service.config.RabbitMqConfig;
-import com.nexis.recording_service.entity.SessionEventsEntity;
-import com.nexis.recording_service.payload.ChatMessage;
-import com.nexis.recording_service.payload.CodeOperation;
+import com.nexis.recording_service.entity.payload.ChatMessage;
+import com.nexis.recording_service.entity.payload.CodeOperation;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
