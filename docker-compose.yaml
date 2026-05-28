@@ -25,6 +25,32 @@ services:
     volumes:
       - "/home/krishna/Development/NexisDB/execution-db:/var/lib/postgresql/data"
 
+  storage:
+    container_name: storage_db
+    image: postgres:15
+    restart: always
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Postgres123
+      POSTGRES_DB: storage-db
+    volumes:
+      - "/home/krishna/Development/NexisDB/storage-db:/var/lib/postgresql/data"
+
+  recording:
+    container_name: recording_db
+    image: postgres:15
+    restart: always
+    ports:
+      - "5436:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Postgres123
+      POSTGRES_DB: recording-db
+    volumes:
+      - "/home/krishna/Development/NexisDB/recording-db:/var/lib/postgresql/data"
+
   redis:
     container_name: nexis_redis
     image: redis:7
@@ -46,18 +72,6 @@ services:
       RABBITMQ_DEFAULT_USER: rabbitmq
       RABBITMQ_DEFAULT_PASS: Rabbitmq123
 
-  storage:
-    container_name: storage_db
-    image: postgres:15
-    restart: always
-    ports:
-      - "5435:5432"
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: Postgres123
-      POSTGRES_DB: storage-db
-    volumes:
-      - "/home/krishna/Development/NexisDB/storage-db:/var/lib/postgresql/data"
 
   minio:
     container_name: nexis_minio
