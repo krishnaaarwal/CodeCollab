@@ -10,6 +10,7 @@
         <option value="$PROJECT_DIR$/websocket-service/pom.xml" />
         <option value="$PROJECT_DIR$/execution-service/pom.xml" />
         <option value="$PROJECT_DIR$/storage-service/pom.xml" />
+        <option value="$PROJECT_DIR$/recording-service/pom.xml" />
       </list>
     </option>
   </component>
