@@ -29,15 +29,23 @@ public class SessionEventsEntity {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    /*
-     * THE MAGIC HAPPENS HERE:
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "payload", columnDefinition = "jsonb")
+    private Object payload;/*
      * Tells Hibernate to map this Java object directly to a PostgreSQL JSONB column.
      * You can map this to an explicit DTO, a Map<String, Object>, or Jackson's JsonNode.
      */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "payload", columnDefinition = "jsonb")
-    private Object payload;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime timestamp;
+
+
+    public SessionEventsEntity(UUID sessionId, String eventType, UUID userId, Object payload, LocalDateTime timestamp) {
+        this.id = null; // Left null explicitly so Postgres allocates the IDENTITY value on insert
+        this.sessionId = sessionId;
+        this.eventType = eventType;
+        this.userId = userId;
+        this.payload = payload; // Holds the full CodeOperation or ChatMessage object for JSONB
+        this.timestamp = timestamp;
+    }
 }

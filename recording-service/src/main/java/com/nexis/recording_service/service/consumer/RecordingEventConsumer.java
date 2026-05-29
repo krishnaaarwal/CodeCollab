@@ -1,27 +1,65 @@
 package com.nexis.recording_service.service.consumer;
 
 import com.nexis.recording_service.config.RabbitMqConfig;
+import com.nexis.recording_service.entity.SessionEventsEntity;
 import com.nexis.recording_service.entity.payload.ChatMessage;
 import com.nexis.recording_service.entity.payload.CodeOperation;
+import com.nexis.recording_service.repository.SessionEventsRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Component
+@RequiredArgsConstructor
 public class RecordingEventConsumer {
+
+    private final RedisTemplate<String, String> redisTemplate;
+    private final SessionEventsRepository sessionEventsRepository;
 
     @RabbitListener(queues = RabbitMqConfig.CHAT_QUEUE)
     public void consumeChatMessages(ChatMessage message) {
-        // 1. Explicitly receive a ChatMessage object
-        // 2. Map it to SessionEventsEntity, setting eventType = "CHAT_MESSAGE"
-        // 3. Save via Repository
+
+        UUID workspaceId = message.getWorkspaceId();
+        String sessionIdStr = redisTemplate.opsForValue().get("nexis:active-session:" + workspaceId);
+
+        if (sessionIdStr == null) return;
+
+        UUID sessionId = UUID.fromString(sessionIdStr);
+        SessionEventsEntity sessionEventsEntity = new SessionEventsEntity(
+                sessionId,
+                "CHAT_MESSAGE",
+                message.getUserId(),
+                message,
+                LocalDateTime.now()
+        );
+        sessionEventsRepository.save(sessionEventsEntity);
     }
 
     @RabbitListener(queues = RabbitMqConfig.CODE_QUEUE)
-    public void consumeCodeOperations(CodeOperation operation) {
-        // 1. Explicitly receive a CodeOperation object
-        // 2. Map it to SessionEventsEntity, setting eventType = "CODE_CHANGE"
-        // 3. Pass the operation object directly into the entity's payload field
-        // 4. Save via Repository
+    public void consumeCodeOperations(
+            CodeOperation operation,
+            @Header("workspaceId") String workspaceIdStr
+    ) {
+        UUID workspaceId = UUID.fromString(workspaceIdStr);
+
+        String sessionIdStr = redisTemplate.opsForValue().get("nexis:active-session:" + workspaceId);
+
+        if (sessionIdStr == null) return;
+
+        UUID sessionId = UUID.fromString(sessionIdStr);
+        SessionEventsEntity sessionEventsEntity = new SessionEventsEntity(
+                sessionId,
+                "CODE_CHANGE",
+                operation.getUserId(),
+                operation,
+                LocalDateTime.now()
+        );
+        sessionEventsRepository.save(sessionEventsEntity);
     }
 
 }
