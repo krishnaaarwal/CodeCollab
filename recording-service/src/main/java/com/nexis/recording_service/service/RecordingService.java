@@ -2,6 +2,7 @@ package com.nexis.recording_service.service;
 
 import com.nexis.recording_service.dto.SessionRequestDto;
 import com.nexis.recording_service.dto.SessionResponseDto;
+import com.nexis.recording_service.entity.SessionEntity;
 import com.nexis.recording_service.entity.SessionEventsEntity;
 import com.nexis.recording_service.repository.SessionEventsRepository;
 import com.nexis.recording_service.repository.SessionRepository;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -23,16 +25,28 @@ public class RecordingService {
     private final jakarta.persistence.EntityManager entityManager;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-    public Void startRecording(SessionRequestDto sessionRequestDto) {
+    public void startRecording(SessionRequestDto sessionRequestDto) {
         UUID sessionId = UUID.randomUUID();
         redisTemplate.opsForValue().set("nexis:active-session:"+sessionRequestDto.workspaceId(),sessionId.toString(), Duration.ofHours(16));
-        return null;
+
+        SessionEntity sessionEntity = SessionEntity.builder().id(sessionId).workspaceId(sessionRequestDto.workspaceId()).startedAt(LocalDateTime.now()).participants(sessionRequestDto.participants()).build();
+        sessionRepository.save(sessionEntity);
     }
 
-    public Void endRecording(UUID id) {
+    public void endRecording(UUID id) {
+        SessionEntity sessionEntity = sessionRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Session not found with Id"+id));
+        UUID workspaceId = sessionEntity.getWorkspaceId();
+
+        redisTemplate.delete("nexis:active-session:" + workspaceId);
+
+        sessionEntity.setEndedAt(LocalDateTime.now());
+        sessionEntity.setDuration(Duration.between(sessionEntity.getStartedAt(),sessionEntity.getEndedAt()));
+        sessionRepository.save(sessionEntity);
     }
 
     public SessionResponseDto getRecording(UUID id) {
+        SessionEntity sessionEntity = sessionRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Session not found with Id"+id));
+        return new SessionResponseDto(sessionEntity.getId(),sessionEntity.getWorkspaceId(),sessionEntity.getStartedAt(),sessionEntity.getEndedAt(),sessionEntity.getDuration());
     }
 
 
@@ -59,4 +73,7 @@ public class RecordingService {
             }
         }
 
+    public void validate(UUID id) throws IllegalArgumentException{
+        if(!sessionRepository.existsById(id)) throw new IllegalArgumentException("Session Id does not exist"+id);
+    }
 }

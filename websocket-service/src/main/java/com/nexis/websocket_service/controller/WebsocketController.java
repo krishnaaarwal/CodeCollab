@@ -37,7 +37,7 @@ public class WebsocketController {
         redisMessagePublisher.publish("nexis:workspace:" + workspaceId + ":code"
                 ,transformedOp);
 
-        rabbitMqEventPublisher.publishCodeEvent(transformedOp);
+        rabbitMqEventPublisher.publishCodeEvent(transformedOp,workspaceId);
 
     }
 
