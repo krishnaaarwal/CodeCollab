@@ -14,6 +14,9 @@ public class RabbitMqConfig {
         return new JacksonJsonMessageConverter();
     }
 
-    public static final String CODE_QUEUE = "nexis.code.queue";
+    public static final String CODE_SHARD_0 = "nexis.code.queue.shard0";
+    public static final String CODE_SHARD_1 = "nexis.code.queue.shard1";
+    public static final String CODE_SHARD_2 = "nexis.code.queue.shard2";
+
     public static final String CHAT_QUEUE = "nexis.chat.queue";
 }

@@ -26,10 +26,17 @@ public class RecordingService {
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     public void startRecording(SessionRequestDto sessionRequestDto) {
-        UUID sessionId = UUID.randomUUID();
-        redisTemplate.opsForValue().set("nexis:active-session:"+sessionRequestDto.workspaceId(),sessionId.toString(), Duration.ofHours(16));
+        String key = "nexis:active-session:" + sessionRequestDto.workspaceId();
+        UUID newSessionId = UUID.randomUUID();
 
-        SessionEntity sessionEntity = SessionEntity.builder().id(sessionId).workspaceId(sessionRequestDto.workspaceId()).startedAt(LocalDateTime.now()).participants(sessionRequestDto.participants()).build();
+        Boolean isAbsent = redisTemplate.opsForValue()
+                .setIfAbsent(key, newSessionId.toString(), Duration.ofHours(16));
+
+        if (Boolean.FALSE.equals(isAbsent)) {
+            throw new IllegalArgumentException("Workspace session is already actively recording.");
+        }
+
+        SessionEntity sessionEntity = SessionEntity.builder().id(newSessionId).workspaceId(sessionRequestDto.workspaceId()).startedAt(LocalDateTime.now()).participants(sessionRequestDto.participants()).build();
         sessionRepository.save(sessionEntity);
     }
 
@@ -45,8 +52,10 @@ public class RecordingService {
     }
 
     public SessionResponseDto getRecording(UUID id) {
-        SessionEntity sessionEntity = sessionRepository.findById(id).orElseThrow(()->new IllegalArgumentException("Session not found with Id"+id));
-        return new SessionResponseDto(sessionEntity.getId(),sessionEntity.getWorkspaceId(),sessionEntity.getStartedAt(),sessionEntity.getEndedAt(),sessionEntity.getDuration());
+
+        SessionEntity sessionEntity = sessionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Session not found with Id: " + id));
+        return new SessionResponseDto(sessionEntity);
     }
 
 

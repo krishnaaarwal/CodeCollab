@@ -8,6 +8,7 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import reactor.core.publisher.Mono;
 
 @Configuration
@@ -19,51 +20,65 @@ public class GatewayConfig {
         this.jwtAuthenticationFilter=jwtAuthenticationFilter;
     }
 
-    //Resolve by IP Address
+    // RESOLVER A: Fallback/Public Route Key Resolver (IP Address Based)
     @Bean
-    public KeyResolver keyResolver(){
+    @Primary // Tells Spring to use this as the default if a generic reference is made
+    public KeyResolver ipKeyResolver() {
         return exchange -> {
             var remoteAddress = exchange.getRequest().getRemoteAddress();
             String ip = "unknown";
-            if(remoteAddress!=null && remoteAddress.getAddress() !=null)
+            if (remoteAddress != null && remoteAddress.getAddress() != null) {
                 ip = remoteAddress.getAddress().getHostAddress();
+            }
             return Mono.just(ip);
         };
     }
 
+    // RESOLVER B: Protected Route Key Resolver (User ID Based)
     @Bean
-    public RateLimiter rateLimiter(){
-        return new RedisRateLimiter(100,200,1);
+    public KeyResolver userIdKeyResolver() {
+        return exchange -> {
+            String userId = exchange.getRequest().getHeaders().getFirst("X-User-Id");
+
+            if (userId == null || userId.isBlank()) {
+                return Mono.just("anonymous-rate-limit-bucket");
+            }
+
+            return Mono.just(userId);
+        };
+    }
+
+    @Bean
+    public RateLimiter<?> redisRateLimiter() {
+        return new RedisRateLimiter(100, 200, 1);
     }
 
     //LOCATE THE ROUTE
     @Bean
-    public RouteLocator routeLocator(RouteLocatorBuilder builder){
+    public RouteLocator routeLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                .route("auth-service-route",
-                        r-> r.path("/api/auth/**")
-                                .filters(
-                                        f-> f.filter(
+                // ROUTE A: PUBLIC AUTH GATEWAY (No JWT checking required)
+                .route("auth-public-route", r -> r
+                        .path("/api/auth/login", "/api/auth/signup", "/api/auth/refresh", "/api/auth/oauth/**")
+                        .filters(f -> f
+                                .requestRateLimiter(c -> c.setRateLimiter(redisRateLimiter()).setKeyResolver(ipKeyResolver()))
+                                .circuitBreaker(c -> c.setName("auth-public").setFallbackUri("forward:/fallback/auth"))
+                        )
+                        .uri("lb://auth-service")
+                )
+                // ROUTE B: SECURE ACCOUNT/WORKSPACE OPERATIONS (Protected by Filter)
+                .route("auth-protected-route", r -> r
+                        .path("/api/auth/me", "/api/workspaces/**")
+                        .filters(f -> f
 
-                                                //1. Jwt filter
-                                                jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
+                                .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
 
-                                                //2. Rate Limiting
-                                                .requestRateLimiter(c->c.setRateLimiter(rateLimiter())
-                                                        .setKeyResolver(keyResolver()))
-
-                                                //3. Circuit Breaker
-                                                .circuitBreaker(
-                                                        c->c.setName("auth-service")
-                                                                .setFallbackUri("forward:/fallback/auth")
-                                                )
-
-                                        )
-                                        .uri("lb://auth-service")
-                ) //uri,predicate,filter in each route
+                                .requestRateLimiter(c -> c.setRateLimiter(redisRateLimiter()).setKeyResolver(userIdKeyResolver()))
+                                .circuitBreaker(c -> c.setName("auth-protected").setFallbackUri("forward:/fallback/auth"))
+                        )
+                        .uri("lb://auth-service")
+                )
                 .build();
     }
-
-
 
 }

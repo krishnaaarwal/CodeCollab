@@ -40,7 +40,7 @@ public class RecordingEventConsumer {
         sessionEventsRepository.save(sessionEventsEntity);
     }
 
-    @RabbitListener(queues = RabbitMqConfig.CODE_QUEUE)
+    @RabbitListener(queues = { RabbitMqConfig.CODE_SHARD_0, RabbitMqConfig.CODE_SHARD_1, RabbitMqConfig.CODE_SHARD_2 })
     public void consumeCodeOperations(
             CodeOperation operation,
             @Header("workspaceId") String workspaceIdStr

@@ -15,16 +15,12 @@ public class RabbitMqEventPublisher {
 
     private final RabbitTemplate rabbitTemplate;
 
-    public void publishCodeEvent(CodeOperation codeEventChanges, UUID workspaceId) {
+
+    public void publishCodeEvent(UUID workspaceId, CodeOperation codeEventChanges) {
         rabbitTemplate.convertAndSend(
-                RabbitMqConfig.TOPIC_EXCHANGE,
-                RabbitMqConfig.CODE_ROUTING_KEY,
-                codeEventChanges,
-                message -> {
-                    // Injecting context directly into the AMQP metadata layer
-                    message.getMessageProperties().setHeader("workspaceId", workspaceId.toString());
-                    return message;
-                }
+                RabbitMqConfig.HASH_EXCHANGE,
+                workspaceId.toString(), // All ops for this UUID lock onto the exact same shard
+                codeEventChanges
         );
     }
 

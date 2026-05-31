@@ -1,5 +1,5 @@
 services:
-  db:
+  auth:
     container_name: auth_db
     image: postgres:15
     restart: always
