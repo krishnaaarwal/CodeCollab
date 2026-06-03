@@ -23,4 +23,6 @@ public interface WorkspaceService {
     WorkspaceResponseDto getWorkspaceById(UUID id);
 
     void deleteUserFromWorkspace(UUID id, UUID memberId);
+
+    WorkspaceResponseDto transferWorkspaceOwnership(UUID id, UUID newOwnerId);
 }

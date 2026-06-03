@@ -13,18 +13,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
-/*
-API Endpoints:
-        • GET /api/workspaces - List user's workspaces
-        * GET /api/workspaces/{id} - get single workspace
-        • POST /api/workspaces - Create new workspace
-        • PUT /api/workspaces/{id} - Update workspace
-        • POST /api/workspaces/{id}/members - Add member
-        * GET /api/workspaces/{id}/members - See all members in workspace
-        * DELETE /api/workspaces/{id}/members/{memberId} - Delete user from workspace
- */
-
-
 
 @Slf4j
 @RestController
@@ -61,6 +49,12 @@ public class WorkspaceController {
     public ResponseEntity<WorkspaceResponseDto> addWorkspaceMember(@PathVariable UUID id, @RequestParam("memberId") UUID memberId){
         log.info("Received request to add user ID: {} to workspace ID: {}", memberId, id);
         return ResponseEntity.status(HttpStatus.CREATED).body(workspaceService.addWorkspaceMember(id, memberId));
+    }
+
+    @PutMapping("/{id}/transfer-ownership")
+    public ResponseEntity<WorkspaceResponseDto> transferOwnership(@PathVariable UUID id, @RequestParam("newOwnerId") UUID newOwnerId) {
+        log.info("Received request to transfer ownership of workspace ID: {} to user ID: {}", id, newOwnerId);
+        return ResponseEntity.ok(workspaceService.transferWorkspaceOwnership(id, newOwnerId));
     }
 
     @GetMapping("/{id}/members")

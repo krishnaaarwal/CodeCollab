@@ -39,16 +39,13 @@ public class WorkspaceServiceImplementation implements WorkspaceService {
     @Override
     @Transactional(readOnly = true)
     public List<WorkspaceResponseDto> getUserWorkspaces() {
-        // 1. Get ONLY the ID from the Security Context
         Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         UUID userId = userPrincipal.getUserEntity().getId();
 
-        // 2. Fetch a FRESH, Attached user using your current active Transaction
         UserEntity attachedUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // 3. Now you can safely call lazy lists!
         List<WorkspaceMemberEntity> workspaceMemberEntityList = attachedUser.getWorkspaceMemberList();
         log.info("Fetching workspaces for User ID: {}", attachedUser.getId());
 
@@ -87,28 +84,23 @@ public class WorkspaceServiceImplementation implements WorkspaceService {
     @Override
     @Transactional
     public void deleteUserFromWorkspace(UUID id, UUID memberId) {
-
-        // 1. Get current logged-in user
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UUID currentUserId = ((UserPrincipal) authentication.getPrincipal()).getUserEntity().getId();
 
-        // 2. Get the Workspace
         WorkspaceEntity workspace =  workspaceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
 
-        // 3. Find the specific "Badge" connecting this User to this Workspace
         WorkspaceMemberEntity memberToRemove = workspace.getMembers().stream()
                 .filter(member -> member.getUser().getId().equals(memberId))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("User is not a member of this workspace"));
 
-        //4. Find the badge connected to Current user
         WorkspaceMemberEntity currentUserBadge = workspace.getMembers().stream()
                 .filter(member -> member.getUser().getId().equals(currentUserId))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("You are not a member of this workspace"));
 
-        //5. Primary security check
+        //Primary security check
         boolean isSelfRemove = currentUserId.equals(memberId);
         boolean isKick = (currentUserBadge.getRole()== WorkspaceRole.OWNER || currentUserBadge.getRole()== WorkspaceRole.ADMIN);
 
@@ -135,12 +127,10 @@ public class WorkspaceServiceImplementation implements WorkspaceService {
     @Override
     @Transactional
     public WorkspaceResponseDto createWorkspace(WorkspaceRequestDto requestDto) {
-        // 1. Get ONLY the ID from the Security Context
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         UUID userId = userPrincipal.getUserEntity().getId();
 
-        // 2. Fetch a FRESH, Attached user
         UserEntity attachedUser = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
@@ -166,7 +156,6 @@ public class WorkspaceServiceImplementation implements WorkspaceService {
 
         workspace.getMembers().add(workspaceMember);
 
-        // This will now work perfectly because attachedUser has an open database session!
         attachedUser.getWorkspaceMemberList().add(workspaceMember);
 
         log.info("Successfully created Workspace ID: {} with Owner ID: {}", workspace.getId(), ownerId);
@@ -267,5 +256,36 @@ public class WorkspaceServiceImplementation implements WorkspaceService {
         ).toList();
     }
 
+    @PreAuthorize("@workspaceSecurity.isOwner(#id)")
+    @Override
+    @Transactional
+    public WorkspaceResponseDto transferWorkspaceOwnership(UUID id, UUID newOwnerId) {
+        WorkspaceEntity workspace = workspaceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
 
+        WorkspaceMemberEntity newOwnerBadge = workspace.getMembers().stream()
+                .filter(member -> member.getUser().getId().equals(newOwnerId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Target user must be a member of the workspace before transferring ownership."));
+
+        UUID oldOwnerId = workspace.getOwnerId();
+        workspace.setOwnerId(newOwnerId);
+        newOwnerBadge.setRole(WorkspaceRole.OWNER);
+
+        WorkspaceMemberEntity oldOwnerBadge = workspace.getMembers().stream()
+                .filter(member -> member.getUser().getId().equals(oldOwnerId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Old owner member record not found"));
+        oldOwnerBadge.setRole(WorkspaceRole.MEMBER);
+
+        log.info("Workspace ID: {} ownership transferred from User ID: {} to User ID: {}", id, oldOwnerId, newOwnerId);
+
+        return new WorkspaceResponseDto(
+                workspace.getId(),
+                workspace.getOwnerId(),
+                workspace.getName(),
+                workspace.getDescription(),
+                workspace.getVisibility()
+        );
+    }
 }

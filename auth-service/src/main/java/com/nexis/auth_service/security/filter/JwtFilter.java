@@ -46,7 +46,6 @@ public class JwtFilter extends OncePerRequestFilter {
 
            String token = requestHeader.substring(7);
 
-            // --- THE REDIS CHECK ---
             // If the token exists as a Key in Redis, it means it's on the Blacklist!
            if (Boolean.TRUE.equals(redisTemplate.hasKey(token))) {
                log.warn("Blocked request! Attempted to use a blacklisted token.");
@@ -59,13 +58,11 @@ public class JwtFilter extends OncePerRequestFilter {
            String email = authUtil.getEmailFromToken(token);
 
            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
                UserEntity userEntity = userRepository.findByEmail(email).orElseThrow();
 
-               // 1. Create the Principal
                UserPrincipal principal = new UserPrincipal(userEntity);
 
-               // 2. Put the Principal (not the entity) into the Authentication Token
+               //Put the Principal (not the entity) into the Authentication Token
                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                        principal, null, principal.getAuthorities()
                );

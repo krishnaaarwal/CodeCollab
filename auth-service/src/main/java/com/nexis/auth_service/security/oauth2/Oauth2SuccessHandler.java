@@ -31,10 +31,9 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
 
         String registrationId = oAuth2AuthenticationToken.getAuthorizedClientRegistrationId();
 
-        // 2. Pass the raw Google/GitHub data to your service
         ResponseEntity<LoginResponseDto> oauth2LoginResponse = authService.handleOauth2LoginRequest(oAuth2User,registrationId);
 
-        // 3 lines:  Write the JWT response
+        // 3 lines: JWT response
         response.setStatus(oauth2LoginResponse.getStatusCode().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.getWriter().write(objectMapper.writeValueAsString(oauth2LoginResponse.getBody()));

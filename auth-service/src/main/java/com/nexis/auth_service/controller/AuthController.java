@@ -1,20 +1,5 @@
 package com.nexis.auth_service.controller;
 
-/*
-API Endpoints:
-        • POST /api/auth/signup - Signup new user
-        • POST /api/auth/login - Login with email/password
-        • POST /api/auth/refresh - Refresh access token
-        • POST /api/auth/logout - Logout (invalidate tokens)
-        • GET /api/auth/me - Get current user profile
-        * POST /api/auth/forgot-password - Forget password
-        * POST /api/auth/reset-password - Reset password
-        • POST /api/auth/oauth/google - Login with Google -LATER
-        • POST /api/auth/oauth/github - Login with GitHub -LATER
-
- */
-
-
 import com.nexis.auth_service.dto.forgot_password.ForgotPasswordRequestDto;
 import com.nexis.auth_service.dto.forgot_password.ResetPasswordRequestDto;
 import com.nexis.auth_service.dto.login.*;
