@@ -71,6 +71,9 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: rabbitmq
       RABBITMQ_DEFAULT_PASS: Rabbitmq123
+    volumes:
+      # This forces the container to enable your plugins automatically on every cold boot
+      - ./enabled_plugins:/etc/rabbitmq/enabled_plugins
 
 
   minio:

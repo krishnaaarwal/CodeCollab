@@ -35,7 +35,7 @@ public class WebsocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")     // HTTP Upgrade → WebSocket (via /ws endpoint)
-                .setAllowedOriginPatterns("*")       // Who can knock (CORS)
+                .setAllowedOriginPatterns("*")       // (CORS)
                 .withSockJS();                // Fallback if WebSocket is blocked
     }
 

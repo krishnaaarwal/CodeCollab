@@ -49,11 +49,10 @@ public class GatewayConfig {
     }
 
     @Bean
-    public RateLimiter<?> redisRateLimiter() {
-        return new RedisRateLimiter(100, 200, 1);
+    public RedisRateLimiter customRedisRateLimiter() {
+        return new RedisRateLimiter(100, 200);
     }
 
-    //LOCATE THE ROUTE
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder builder) {
         return builder.routes()
@@ -61,7 +60,7 @@ public class GatewayConfig {
                 .route("auth-public-route", r -> r
                         .path("/api/auth/login", "/api/auth/signup", "/api/auth/refresh", "/api/auth/oauth/**")
                         .filters(f -> f
-                                .requestRateLimiter(c -> c.setRateLimiter(redisRateLimiter()).setKeyResolver(ipKeyResolver()))
+                                .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(ipKeyResolver()))
                                 .circuitBreaker(c -> c.setName("auth-public").setFallbackUri("forward:/fallback/auth"))
                         )
                         .uri("lb://auth-service")
@@ -73,7 +72,7 @@ public class GatewayConfig {
 
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
 
-                                .requestRateLimiter(c -> c.setRateLimiter(redisRateLimiter()).setKeyResolver(userIdKeyResolver()))
+                                .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(userIdKeyResolver()))
                                 .circuitBreaker(c -> c.setName("auth-protected").setFallbackUri("forward:/fallback/auth"))
                         )
                         .uri("lb://auth-service")

@@ -18,10 +18,24 @@ public class RabbitMqConfig {
     public static final String CHAT_ROUTING_KEY = "nexis.chat.routing.key";
     public static final String TOPIC_EXCHANGE = "nexis.exchange";
 
+    public static final String RESULT_QUEUE = "nexis.result.queue";
+    public static final String RESULT_ROUTING_KEY = "nexis.result.routing.key";
 
     public static final String CODE_SHARD_0 = "nexis.code.queue.shard0";
     public static final String CODE_SHARD_1 = "nexis.code.queue.shard1";
     public static final String CODE_SHARD_2 = "nexis.code.queue.shard2";
+
+    @Bean
+    public Queue resultQueue() {
+        return new Queue(RESULT_QUEUE, true); // Durable queue so results aren't lost if broker restarts
+    }
+
+    @Bean
+    public Binding resultBinding(Queue resultQueue, TopicExchange topicExchange) {
+        return BindingBuilder.bind(resultQueue)
+                .to(topicExchange)
+                .with(RESULT_ROUTING_KEY);
+    }
 
     @Bean
     public Queue chatQueue(){
