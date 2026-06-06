@@ -56,16 +56,20 @@ public class GatewayConfig {
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                // ROUTE A: PUBLIC AUTH GATEWAY (No JWT checking required)
+                // ROUTE A: PUBLIC AUTH GATEWAY
                 .route("auth-public-route", r -> r
-                        .path("/api/auth/login", "/api/auth/signup", "/api/auth/refresh", "/api/auth/oauth/**")
+                        .path("/api/auth/login",
+                                "/api/auth/signup",
+                                "/api/auth/refresh",
+                                "/api/auth/oauth/**")
                         .filters(f -> f
                                 .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(ipKeyResolver()))
                                 .circuitBreaker(c -> c.setName("auth-public").setFallbackUri("forward:/fallback/auth"))
                         )
                         .uri("lb://auth-service")
                 )
-                // ROUTE B: SECURE ACCOUNT/WORKSPACE OPERATIONS (Protected by Filter)
+
+                // Auth service route
                 .route("auth-protected-route", r -> r
                         .path("/api/auth/me", "/api/workspaces/**")
                         .filters(f -> f

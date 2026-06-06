@@ -1,6 +1,6 @@
 package com.nexis.recording_service.config;
 
-import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,7 +11,7 @@ public class RabbitMqConfig {
     @Bean
     public MessageConverter jsonMessageConverter() {
         // Enforces that all objects sent/received via RabbitTemplate are converted to/from JSON bytes
-        return new JacksonJsonMessageConverter();
+        return new Jackson2JsonMessageConverter();
     }
 
     public static final String CODE_SHARD_0 = "nexis.code.queue.shard0";
