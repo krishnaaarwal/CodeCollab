@@ -9,7 +9,12 @@ import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsWebFilter;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 @Configuration
 public class GatewayConfig {
@@ -56,12 +61,18 @@ public class GatewayConfig {
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                // ROUTE A: PUBLIC AUTH GATEWAY
+                // =========================================================================
+                // 1. AUTH SERVICE DOMAIN (Port 8081)
+                // =========================================================================
+                // ROUTE A: PUBLIC AUTH & OAUTH GATEWAY (IP-Based Rate Limiting)
                 .route("auth-public-route", r -> r
                         .path("/api/auth/login",
                                 "/api/auth/signup",
                                 "/api/auth/refresh",
-                                "/api/auth/oauth/**")
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password",
+                                "/oauth2/**",
+                                "/login/oauth2/code/**")
                         .filters(f -> f
                                 .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(ipKeyResolver()))
                                 .circuitBreaker(c -> c.setName("auth-public").setFallbackUri("forward:/fallback/auth"))
@@ -69,19 +80,78 @@ public class GatewayConfig {
                         .uri("lb://auth-service")
                 )
 
-                // Auth service route
+                // ROUTE B: PROTECTED AUTH & WORKSPACE MANAGEMENT
                 .route("auth-protected-route", r -> r
-                        .path("/api/auth/me", "/api/workspaces/**")
+                        .path("/api/auth/me",
+                                "/api/auth/logout",
+                                "/api/workspaces/**")
                         .filters(f -> f
-
                                 .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
-
                                 .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(userIdKeyResolver()))
                                 .circuitBreaker(c -> c.setName("auth-protected").setFallbackUri("forward:/fallback/auth"))
                         )
                         .uri("lb://auth-service")
                 )
+
+                // =========================================================================
+                // 2. EXECUTION SERVICE DOMAIN (Port 8083)
+                // =========================================================================
+                .route("execution-service-route", r -> r
+                        .path("/api/execute/**")
+                        .filters(f -> f
+                                .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
+                                .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(userIdKeyResolver()))
+                                .circuitBreaker(c -> c.setName("execution-service").setFallbackUri("forward:/fallback/execute"))
+                        )
+                        .uri("lb://execution-service")
+                )
+
+                // =========================================================================
+                // 3. STORAGE SERVICE DOMAIN (Port 8084)
+                // =========================================================================
+                .route("storage-service-route", r -> r
+                        .path("/api/files/**")
+                        .filters(f -> f
+                                .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
+                                .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(userIdKeyResolver()))
+                                .circuitBreaker(c -> c.setName("storage-service").setFallbackUri("forward:/fallback/storage"))
+                        )
+                        .uri("lb://storage-service")
+                )
+
+                // =========================================================================
+                // 4. RECORDING SERVICE DOMAIN (Port 8085)
+                // =========================================================================
+                .route("recording-service-route", r -> r
+                        .path("/api/sessions/**")
+                        .filters(f -> f
+                                .filter(jwtAuthenticationFilter.apply(new JwtAuthenticationFilter.Config()))
+                                .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(userIdKeyResolver()))
+                                .circuitBreaker(c -> c.setName("recording-service").setFallbackUri("forward:/fallback/recording"))
+                        )
+                        .uri("lb://recording-service")
+                )
                 .build();
     }
 
+    @Bean
+    public CorsWebFilter corsWebFilter() {
+        CorsConfiguration corsConfig = new CorsConfiguration();
+
+        corsConfig.setAllowedOriginPatterns(List.of("http://localhost:*"));
+
+        corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+        corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-User-Id"));
+
+        corsConfig.setAllowCredentials(true);
+
+        // Let the frontend read the incoming custom headers if required
+        corsConfig.setExposedHeaders(List.of("Authorization"));
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfig);
+
+        return new CorsWebFilter(source);
+    }
 }

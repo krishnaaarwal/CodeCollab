@@ -28,12 +28,7 @@ public class FallbackController {
         return buildFallbackResponse("File Storage Service failed to respond. Your project tree cannot be loaded right now.", "storage-service");
     }
 
-    @RequestMapping("/websocket")
-    public Mono<ResponseEntity<Map<String, Object>>> webSocketServiceFallback() {
-        return buildFallbackResponse("Collaboration signaling server is down. Real-time editing is offline.", "websocket-service");
-    }
-
-    @RequestMapping("/record")
+    @RequestMapping("/recording")
     public Mono<ResponseEntity<Map<String, Object>>> recordingServiceFallback() {
         return buildFallbackResponse("Session Recording Service is currently unavailable.", "recording-service");
     }

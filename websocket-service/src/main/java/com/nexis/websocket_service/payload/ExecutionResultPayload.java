@@ -10,7 +10,7 @@ public class ExecutionResultPayload {
     private UUID id; // jobId
     private UUID workspaceId;
     private UUID userId;
-    private StatusType statusType;
+    private StatusType status;
     private String output;
     private String error;
 }

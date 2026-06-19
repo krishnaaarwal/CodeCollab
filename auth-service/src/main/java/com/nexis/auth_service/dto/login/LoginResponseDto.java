@@ -14,6 +14,6 @@ import java.util.UUID;
 public class LoginResponseDto {
     private UUID id;
     private String email;
-    private String jwt;
+    private String accessToken;
     private String refreshToken;
 }

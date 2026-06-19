@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -15,6 +16,6 @@ import java.util.UUID;
 public class ChatMessage {
     private UUID userId;
     private UUID workspaceId;  //which workspace it belongs to
-    private LocalDateTime time = LocalDateTime.now();
+    private Instant time = Instant.now();
     private String message;
 }

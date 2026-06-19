@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -44,4 +45,13 @@ public class StorageController {
         return ResponseEntity.ok(storageService.downloadFile(id,userUuid));
     }
 
+    @GetMapping("/workspace/{workspaceId}")
+    public ResponseEntity<List<FileResponseDto>> listWorkspaceFiles(
+            @RequestHeader("X-User-Id") String userId,
+            @PathVariable("workspaceId") UUID workspaceId) {
+
+        UUID userUuid = UUID.fromString(userId);
+        List<FileResponseDto> files = storageService.getFilesByWorkspace(workspaceId, userUuid);
+        return ResponseEntity.ok(files);
+    }
 }

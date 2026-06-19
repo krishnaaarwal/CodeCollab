@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -203,6 +204,30 @@ public class StorageServiceImplementation implements StorageService {
             throw new RuntimeException("Storage engine infrastructure failure", e);
         }
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<FileResponseDto> getFilesByWorkspace(UUID workspaceId, UUID userId) {
+        log.info("Fetching complete file tree metadata for Workspace ID: {} by User: {}", workspaceId, userId);
+
+        boolean hasAccess = authServiceClient.isWorkspaceMember(workspaceId, userId);
+        if (!hasAccess) {
+            log.warn("Unauthorized access attempt on Workspace tree: User: {}", userId);
+            throw new SecurityException("Forbidden: You do not have access to this workspace.");
+        }
+
+        List<FileEntity> files = fileRepository.findByWorkspaceId(workspaceId);
+
+        return files.stream()
+                .map(file -> new FileResponseDto(
+                        file.getId(),
+                        file.getFileName(),
+                        file.getFileSize(),
+                        file.getFileType(),
+                        file.getCurrentVersion()
+                ))
+                .toList();
     }
 
 }

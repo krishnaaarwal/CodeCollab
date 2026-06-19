@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nexis WS Tester</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+    <style>
+        body { background: #111; color: #e8e8e8; font-family: monospace; padding: 20px; }
+        button { background: #cbf14c; color: #000; border: none; padding: 8px 16px;
+            cursor: pointer; margin: 4px; font-weight: bold; }
+        #log { background: #0d0d0d; border: 1px solid #2a2a2a; padding: 12px;
+            height: 400px; overflow-y: auto; margin-top: 16px; font-size: 13px; }
+        .recv { color: #4ecdc4; } .sent { color: #cbf14c; } .sys { color: #666; }
+        input, textarea { background: #1a1a1a; color: #e8e8e8; border: 1px solid #2a2a2a;
+            padding: 6px; width: 400px; }
+    </style>
+</head>
+<body>
+<h2 style="color:#cbf14c">⚡ Nexis WebSocket Tester</h2>
+
+<div>
+    <b>JWT Token:</b><br>
+    <textarea id="jwt" rows="3" placeholder="Paste your Bearer token here (without 'Bearer ')"></textarea>
+</div>
+<div style="margin-top:8px">
+    <b>Workspace ID (UUID):</b>
+    <input id="workspaceId" value="550e8400-e29b-41d4-a716-446655440000" />
+</div>
+<div style="margin-top:8px">
+    <b>Your User ID (UUID):</b>
+    <input id="userId" value="123e4567-e89b-12d3-a456-426614174000" />
+</div>
+
+<div style="margin-top:12px">
+    <button onclick="connect()">🔌 Connect</button>
+    <button onclick="disconnect()">❌ Disconnect</button>
+</div>
+
+<hr style="border-color:#2a2a2a; margin:16px 0">
+
+<div>
+    <button onclick="sendCodeInsert()">📝 Code INSERT</button>
+    <button onclick="sendCodeDelete()">🗑 Code DELETE</button>
+    <button onclick="sendCursor()">📍 Cursor Move</button>
+    <button onclick="sendChat()">💬 Chat Message</button>
+    <button onclick="sendTypingTrue()">⌨️ Typing: true</button>
+    <button onclick="sendTypingFalse()">⌨️ Typing: false</button>
+    <button onclick="sendPrivateMessage()">🔒 Private Msg</button>
+</div>
+
+<div id="log"></div>
+
+<script>
+    let client = null;
+
+    function log(msg, type = 'sys') {
+        const div = document.getElementById('log');
+        const time = new Date().toTimeString().slice(0, 8);
+        div.innerHTML += `<div class="${type}">[${time}] ${msg}</div>`;
+        div.scrollTop = div.scrollHeight;
+    }
+
+    function connect() {
+        const jwt = document.getElementById('jwt').value.trim();
+        if (!jwt) { alert('Paste your JWT token first'); return; }
+
+        client = new StompJs.Client({
+            webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+            connectHeaders: { Authorization: `Bearer ${jwt}` },
+            reconnectDelay: 0,
+            debug: (str) => log('DEBUG: ' + str, 'sys'),
+
+            onConnect: () => {
+                log('✅ CONNECTED', 'sys');
+                const wsId = document.getElementById('workspaceId').value;
+
+                // Subscribe to ALL channels
+                client.subscribe(`/topic/workspace/${wsId}/code`,
+                    m => log('← CODE: ' + m.body, 'recv'));
+
+                client.subscribe(`/topic/workspace/${wsId}/cursor`,
+                    m => log('← CURSOR: ' + m.body, 'recv'));
+
+                client.subscribe(`/topic/workspace/${wsId}/chat`,
+                    m => log('← CHAT: ' + m.body, 'recv'));
+
+                client.subscribe(`/topic/workspace/${wsId}/typing`,
+                    m => log('← TYPING: ' + m.body, 'recv'));
+
+                client.subscribe(`/topic/workspace/${wsId}/presence`,
+                    m => log('← PRESENCE: ' + m.body, 'recv'));
+
+                client.subscribe(`/topic/workspace/${wsId}/terminal`,
+                    m => log('← TERMINAL: ' + m.body, 'recv'));
+
+                client.subscribe(`/user/queue/private`,
+                    m => log('← PRIVATE: ' + m.body, 'recv'));
+
+                log('📡 Subscribed to all 7 channels. Presence JOINED event should appear above ☝️', 'sys');
+            },
+
+            onDisconnect: () => log('🔴 DISCONNECTED', 'sys'),
+            onStompError: (frame) => log('❌ STOMP ERROR: ' + frame.headers.message, 'sys'),
+        });
+
+        client.activate();
+    }
+
+    function disconnect() {
+        if (client) { client.deactivate(); log('Disconnected manually', 'sys'); }
+    }
+
+    function pub(dest, payload) {
+        if (!client?.connected) { log('Not connected!', 'sys'); return; }
+        client.publish({ destination: dest, body: JSON.stringify(payload) });
+        log('→ ' + dest + ' ' + JSON.stringify(payload), 'sent');
+    }
+
+    function workspaceId() { return document.getElementById('workspaceId').value; }
+    function userId()      { return document.getElementById('userId').value; }
+
+    // ── Mock payloads ─────────────────────────────────────────
+
+    function sendCodeInsert() {
+        pub(`/app/workspace/${workspaceId()}/code`, {
+            version: 0,
+            userId: userId(),
+            operationType: "INSERT",
+            position: 10,
+            code: "hello",
+            length: null
+        });
+    }
+
+    function sendCodeDelete() {
+        pub(`/app/workspace/${workspaceId()}/code`, {
+            version: 0,
+            userId: userId(),
+            operationType: "DELETE",
+            position: 5,
+            code: null,
+            length: 3
+        });
+    }
+
+    function sendCursor() {
+        pub(`/app/workspace/${workspaceId()}/cursor`, {
+            userId: userId(),
+            line: 4,
+            characterIndex: 12
+        });
+    }
+
+    function sendChat() {
+        pub(`/app/workspace/${workspaceId()}/chat`, {
+            userId: userId(),
+            workspaceId: workspaceId(),
+            time: new Date().toISOString(),
+            message: "Hey, anyone here? Testing Nexis! 🚀"
+        });
+    }
+
+    function sendTypingTrue() {
+        pub(`/app/workspace/${workspaceId()}/typing`, {
+            userId: userId(),
+            isTyping: true
+        });
+    }
+
+    function sendTypingFalse() {
+        pub(`/app/workspace/${workspaceId()}/typing`, {
+            userId: userId(),
+            isTyping: false
+        });
+    }
+
+    function sendPrivateMessage() {
+        const receiver = prompt("Enter receiver UUID:");
+        if (!receiver) return;
+        pub(`/app/private`, {
+            senderId: userId(),
+            receiverId: receiver,
+            messageType: "DIRECT_MESSAGE",
+            content: "Hey! This is a private test message from Nexis tester."
+        });
+    }
+</script>
+</body>
+</html>

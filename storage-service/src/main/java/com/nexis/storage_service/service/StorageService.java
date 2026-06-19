@@ -5,6 +5,7 @@ import com.nexis.storage_service.dto.FileResponseDto;
 import com.nexis.storage_service.dto.UploadCompleteDto;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface StorageService {
@@ -13,4 +14,6 @@ public interface StorageService {
     FileResponseDto downloadFile(UUID id, UUID userId);
 
     FileResponseDto uploadFile(FileRequestDto fileRequestDto, UUID userId);
+
+    List<FileResponseDto> getFilesByWorkspace(UUID workspaceId, UUID userUuid);
 }
