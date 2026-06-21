@@ -19,8 +19,13 @@ public class RabbitMqEventPublisher {
     public void publishCodeEvent(UUID workspaceId, CodeOperation codeEventChanges) {
         rabbitTemplate.convertAndSend(
                 RabbitMqConfig.HASH_EXCHANGE,
-                workspaceId.toString(), // All ops for this UUID lock onto the exact same shard
-                codeEventChanges
+                workspaceId.toString(), // The routing key for the hash exchange
+                codeEventChanges,
+                message -> {
+                  // header for the Recording Service
+                    message.getMessageProperties().setHeader("workspaceId", workspaceId.toString());
+                    return message;
+                }
         );
     }
 

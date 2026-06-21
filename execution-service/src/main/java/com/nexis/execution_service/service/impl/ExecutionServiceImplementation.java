@@ -31,7 +31,6 @@ public class ExecutionServiceImplementation implements ExecutionService {
     private final DockerClient dockerClient;
 
     @Override
-    @Transactional
     public JobResponseDto submitJob(JobRequestDto requestDto) {
 
         ExecutionJob job = ExecutionJob.builder()
@@ -41,16 +40,15 @@ public class ExecutionServiceImplementation implements ExecutionService {
                 .code(requestDto.getCode())
                 .status(StatusType.QUEUED)
                 .createdAt(LocalDateTime.now())
-                .startedAt(null)
-                .completedAt(null)
                 .build();
 
-        JobMessageDto messageDto = new JobMessageDto(job.getId(),job.getCodeLanguage());
+        ExecutionJob savedJob = executionRepository.save(job);
 
-        executionRepository.save(job);
-        rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME,RabbitMqConfig.ROUTING_KEY,messageDto);
+        JobMessageDto messageDto = new JobMessageDto(savedJob.getId(), savedJob.getCodeLanguage());
+        
+        rabbitTemplate.convertAndSend(RabbitMqConfig.EXCHANGE_NAME, RabbitMqConfig.ROUTING_KEY, messageDto);
 
-        return new JobResponseDto(job.getId(),job.getStatus(),job.getOutput(), job.getError(),null);
+        return new JobResponseDto(savedJob.getId(), savedJob.getStatus(), savedJob.getOutput(), savedJob.getError(), null);
     }
 
     @Override

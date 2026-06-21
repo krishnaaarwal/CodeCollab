@@ -44,6 +44,7 @@ public class WebSecurityConfig{
                                 "/api/auth/refresh",     // Public, because access token is dead!
                                 "/api/auth/forgot-password",
                                  "/api/auth/reset-password",
+                                "/api/auth/internal/**",
                                  "/v3/api-docs/**",       // Let Swagger generate the JSON
                                  "/swagger-ui/**",        // Let Swagger serve the UI CSS/JS
                                  "/swagger-ui.html"       // Let Swagger serve the main page

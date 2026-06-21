@@ -112,7 +112,7 @@ public class AuthServiceImplementation implements AuthService {
         return LoginResponseDto.builder()
                 .id(userEntity.getId())
                 .email(userEntity.getEmail())
-                .jwt(token)
+                .accessToken(token)
                 .refreshToken(refreshToken.getToken())
                 .build();
     }
@@ -197,7 +197,7 @@ public class AuthServiceImplementation implements AuthService {
         log.info("Successfully rotated tokens for User ID: {}", userId);
 
         return LoginResponseDto.builder()
-                .jwt(accessToken)
+                .accessToken(accessToken)
                 .refreshToken(refreshToken.getToken())
                 .id(user.getId())
                 .email(user.getEmail())

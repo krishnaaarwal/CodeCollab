@@ -7,6 +7,7 @@ import com.nexis.recording_service.entity.payload.CodeOperation;
 import com.nexis.recording_service.repository.SessionEventsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.amqp.support.AmqpHeaders;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
@@ -40,12 +41,12 @@ public class RecordingEventConsumer {
         sessionEventsRepository.save(sessionEventsEntity);
     }
 
+
     @RabbitListener(queues = { RabbitMqConfig.CODE_SHARD_0, RabbitMqConfig.CODE_SHARD_1, RabbitMqConfig.CODE_SHARD_2 })
     public void consumeCodeOperations(
             CodeOperation operation,
-            @Header("workspaceId") String workspaceIdStr
+            @Header("workspaceId") String workspaceId
     ) {
-        UUID workspaceId = UUID.fromString(workspaceIdStr);
 
         String sessionIdStr = redisTemplate.opsForValue().get("nexis:active-session:" + workspaceId);
 

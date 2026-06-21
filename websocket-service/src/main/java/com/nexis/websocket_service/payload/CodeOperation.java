@@ -19,6 +19,7 @@ public class CodeOperation {
     private Integer position;          // Kis position par insert karna ha
     private String code;               // Insert karne ka content
     private Integer length;           // How many characters to DELETE or RETAIN
+    private String language;
 }
 
 

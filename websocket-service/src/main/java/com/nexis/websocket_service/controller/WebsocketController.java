@@ -12,6 +12,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Slf4j
@@ -61,7 +62,7 @@ public class WebsocketController {
                 workspaceId,
                 chat.getUserId()
         );
-
+        chat.setTime(Instant.now().toString());
         redisMessagePublisher.publish("nexis:workspace:"+workspaceId+":chat"
                 ,chat);
 

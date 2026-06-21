@@ -33,11 +33,20 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
 
         ResponseEntity<LoginResponseDto> oauth2LoginResponse = authService.handleOauth2LoginRequest(oAuth2User,registrationId);
 
+        LoginResponseDto body = oauth2LoginResponse.getBody();
+
         // 3 lines: JWT response
         response.setStatus(oauth2LoginResponse.getStatusCode().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.getWriter().write(objectMapper.writeValueAsString(oauth2LoginResponse.getBody()));
 
         //TODO: Implement frontend here to redirect to it back again later.
+        String frontendRedirectUrl = String.format(
+                "http://localhost:5173/oauth2/redirect?token=%s&refreshToken=%s",
+                body.getAccessToken(),
+                body.getRefreshToken()
+        );
+
+        response.sendRedirect(frontendRedirectUrl);
     }
 }
