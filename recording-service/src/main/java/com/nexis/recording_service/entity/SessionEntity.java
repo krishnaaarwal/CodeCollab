@@ -19,7 +19,6 @@ import java.util.UUID;
 public class SessionEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(name = "workspace_id", nullable = false)

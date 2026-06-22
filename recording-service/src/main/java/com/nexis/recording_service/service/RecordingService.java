@@ -25,7 +25,8 @@ public class RecordingService {
     private final jakarta.persistence.EntityManager entityManager;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-    public void startRecording(SessionRequestDto sessionRequestDto) {
+    @Transactional
+    public SessionResponseDto startRecording(SessionRequestDto sessionRequestDto) {
         String key = "nexis:active-session:" + sessionRequestDto.workspaceId();
         UUID newSessionId = UUID.randomUUID();
 
@@ -36,8 +37,22 @@ public class RecordingService {
             throw new IllegalArgumentException("Workspace session is already actively recording.");
         }
 
-        SessionEntity sessionEntity = SessionEntity.builder().id(newSessionId).workspaceId(sessionRequestDto.workspaceId()).startedAt(LocalDateTime.now()).participants(sessionRequestDto.participants()).build();
-        sessionRepository.save(sessionEntity);
+        SessionEntity sessionEntity = SessionEntity.builder()
+                .id(newSessionId)
+                .workspaceId(sessionRequestDto.workspaceId())
+                .startedAt(LocalDateTime.now())
+                .participants(sessionRequestDto.participants())
+                .build();
+
+        entityManager.persist(sessionEntity);
+
+        return new SessionResponseDto(
+                sessionEntity.getId(),
+                sessionEntity.getWorkspaceId(),
+                sessionEntity.getStartedAt(),
+                null, // hasn't ended yet
+                null  // duration is dynamic/null right now
+        );
     }
 
     public void endRecording(UUID id) {

@@ -21,7 +21,6 @@ import java.util.UUID;
 })
 public class FileEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
     private UUID workspaceId;
     private String fileName;

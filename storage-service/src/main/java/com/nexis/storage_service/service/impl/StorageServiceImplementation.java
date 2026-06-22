@@ -70,7 +70,6 @@ public class StorageServiceImplementation implements StorageService {
 
         // Log the unverified file instance to disk as PENDING
         FileVersionEntity pendingVersion = FileVersionEntity.builder()
-                .id(UUID.randomUUID())
                 .fileId(fileId)
                 .fileSize(dto.size())
                 .version(versionToUpload)

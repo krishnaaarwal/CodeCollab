@@ -5,6 +5,7 @@ import com.nexis.recording_service.dto.SessionResponseDto;
 import com.nexis.recording_service.service.RecordingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,9 +20,9 @@ public class RecordingController {
     private final RecordingService recordingService;
 
     @PostMapping("/start")
-    public ResponseEntity<Void> startRecording(@RequestBody SessionRequestDto sessionRequestDto){
-        recordingService.startRecording(sessionRequestDto);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<SessionResponseDto> startRecording(@RequestBody SessionRequestDto request) {
+        SessionResponseDto response = recordingService.startRecording(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/{id}/end")
