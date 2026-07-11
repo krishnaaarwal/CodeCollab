@@ -5,6 +5,8 @@ spring:
 #Registered as Eureka server
 eureka:
   instance:
+    secure-port-enabled: false
+    non-secure-port-enabled: true
     hostname: localhost
   client:
     register-with-eureka: false
