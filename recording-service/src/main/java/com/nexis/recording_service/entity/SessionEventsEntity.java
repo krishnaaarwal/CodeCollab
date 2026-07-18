@@ -1,5 +1,6 @@
 package com.nexis.recording_service.entity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -22,7 +23,6 @@ public class SessionEventsEntity {
 
     @Column(name = "session_id", nullable = false)
     private UUID sessionId;
-
     @Column(name = "event_type", nullable = false)
     private String eventType;
 
@@ -31,7 +31,7 @@ public class SessionEventsEntity {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload", columnDefinition = "jsonb")
-    private Object payload;/*
+    private JsonNode payload;/*
      * Tells Hibernate to map this Java object directly to a PostgreSQL JSONB column.
      * You can map this to an explicit DTO, a Map<String, Object>, or Jackson's JsonNode.
      */
@@ -40,7 +40,7 @@ public class SessionEventsEntity {
     private LocalDateTime timestamp;
 
 
-    public SessionEventsEntity(UUID sessionId, String eventType, UUID userId, Object payload, LocalDateTime timestamp) {
+    public SessionEventsEntity(UUID sessionId, String eventType, UUID userId, JsonNode payload, LocalDateTime timestamp) {
         this.id = null; // Left null explicitly so Postgres allocates the IDENTITY value on insert
         this.sessionId = sessionId;
         this.eventType = eventType;

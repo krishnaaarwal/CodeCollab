@@ -25,7 +25,6 @@ public class ExecutionJob {
     private UUID id;
 
     private UUID userId;
-
     private UUID workspaceId;
 
     @Enumerated(EnumType.STRING)

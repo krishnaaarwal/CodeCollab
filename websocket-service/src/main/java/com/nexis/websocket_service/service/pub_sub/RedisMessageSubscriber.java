@@ -44,11 +44,16 @@ public class RedisMessageSubscriber implements MessageListener {
             else if (parts[1].equals("user")) {
                 String userId = parts[2];
 
-                messagingTemplate.convertAndSendToUser(
-                        userId,              // Spring finds this user's session
-                        "/queue/private",    // client subscribed to /user/queue/private
+                // BYPASS convertAndSendToUser. Send directly to a user-scoped topic.
+                messagingTemplate.convertAndSend(
+                        "/topic/user/" + userId + "/private",
                         publishedMessage
                 );
+//                messagingTemplate.convertAndSendToUser(
+//                        userId,              // Spring finds this user's session
+//                        "/queue/private",    // client subscribed to /user/queue/private
+//                        publishedMessage
+//                );
 
             }else {
                 log.warn("Unrecognized Redis channel pattern received: {}", channel);
