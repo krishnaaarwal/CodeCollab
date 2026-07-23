@@ -1,5 +1,6 @@
 package com.nexis.storage_service.controller;
 
+import com.nexis.storage_service.dto.FileRenameRequestDto;
 import com.nexis.storage_service.dto.FileRequestDto;
 import com.nexis.storage_service.dto.FileResponseDto;
 import com.nexis.storage_service.dto.UploadCompleteDto;
@@ -54,4 +55,24 @@ public class StorageController {
         List<FileResponseDto> files = storageService.getFilesByWorkspace(workspaceId, userUuid);
         return ResponseEntity.ok(files);
     }
+    @PatchMapping("/{fileId}/rename")
+    public ResponseEntity<Void> renameFile(
+            @RequestHeader("X-User-Id") UUID userId,
+            @PathVariable UUID fileId,
+            @RequestBody FileRenameRequestDto request) {
+
+        storageService.renameFile(fileId, request, userId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{fileId}")
+    public ResponseEntity<Void> deleteFile(
+            @RequestHeader("X-User-Id") UUID userId,
+            @PathVariable UUID fileId,
+            @RequestParam("workspaceId") UUID workspaceId) {
+
+        storageService.deleteFile(fileId, workspaceId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
 }

@@ -2,9 +2,7 @@ package com.nexis.storage_service.service.impl;
 
 import com.nexis.storage_service.client.AuthServiceClient;
 import com.nexis.storage_service.config.type.FileStatus;
-import com.nexis.storage_service.dto.FileRequestDto;
-import com.nexis.storage_service.dto.FileResponseDto;
-import com.nexis.storage_service.dto.UploadCompleteDto;
+import com.nexis.storage_service.dto.*;
 import com.nexis.storage_service.entity.FileEntity;
 import com.nexis.storage_service.entity.FileVersionEntity;
 import com.nexis.storage_service.exception.FileVersionConflictException;
@@ -17,8 +15,11 @@ import io.minio.MinioClient;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +34,7 @@ public class StorageServiceImplementation implements StorageService {
     private final FileVersionRepository fileVersionRepository;
     private final AuthServiceClient authServiceClient;
     private final MinioClient minioClient;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional
@@ -227,6 +229,64 @@ public class StorageServiceImplementation implements StorageService {
                         file.getCurrentVersion()
                 ))
                 .toList();
+    }
+
+    @Override
+    public void renameFile(UUID fileId, FileRenameRequestDto dto, UUID userId) {
+
+        log.info("Processing rename request for File ID: {} to '{}' by User: {}", fileId, dto.newName(), userId);
+
+        FileEntity file = fileRepository.findById(fileId)
+                .orElseThrow(() -> new IllegalArgumentException("File not found."));
+
+        // Verify the file actually belongs to the workspace claimed in the DTO
+        if (!file.getWorkspaceId().equals(dto.workspaceId())) {
+            throw new SecurityException("Workspace mismatch boundary violation.");
+        }
+
+        if (!authServiceClient.isWorkspaceMember(dto.workspaceId(), userId)) {
+            throw new SecurityException("Forbidden: You do not have access to this workspace.");
+        }
+
+        // Update name and re-evaluate the extension dynamically
+        file.setFileName(dto.newName());
+        file.setFileType(extractExtension(dto.newName()));
+        file.setUpdatedAt(LocalDateTime.now());
+
+        fileRepository.save(file);
+        log.info("Successfully renamed File ID: {} to {}", fileId, dto.newName());
+
+        // FIRE EVENT
+        FileEventDto event = new FileEventDto("FILE_RENAMED", dto.workspaceId(), fileId, dto.newName(), Instant.now().toString());
+        rabbitTemplate.convertAndSend("nexis.exchange", "nexis.file.events", event);
+    }
+
+    @Override
+    @Transactional
+    public void deleteFile(UUID fileId, UUID workspaceId, UUID userId) {
+        log.info("Processing delete request for File ID: {} by User: {}", fileId, userId);
+
+        FileEntity file = fileRepository.findById(fileId)
+                .orElseThrow(() -> new IllegalArgumentException("File not found."));
+
+        if (!file.getWorkspaceId().equals(workspaceId)) {
+            throw new SecurityException("Workspace mismatch boundary violation.");
+        }
+
+        if (!authServiceClient.isWorkspaceMember(workspaceId, userId)) {
+            throw new SecurityException("Forbidden: You do not have access to this workspace.");
+        }
+
+        // Drop the master record.
+        // The MinIO physical bytes and the file_versions history are now officially "orphaned"
+        // and waiting for your asynchronous nightly sweeper to garbage collect them.
+        fileRepository.delete(file);
+        log.info("Successfully deleted metadata for File ID: {}", fileId);
+
+        // FIRE EVENT
+        FileEventDto event = new FileEventDto("FILE_DELETED", workspaceId, fileId, null, Instant.now().toString());
+        rabbitTemplate.convertAndSend("nexis.exchange", "nexis.file.events", event);
+
     }
 
 }

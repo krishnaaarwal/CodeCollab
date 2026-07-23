@@ -1,5 +1,6 @@
 package com.nexis.storage_service.service;
 
+import com.nexis.storage_service.dto.FileRenameRequestDto;
 import com.nexis.storage_service.dto.FileRequestDto;
 import com.nexis.storage_service.dto.FileResponseDto;
 import com.nexis.storage_service.dto.UploadCompleteDto;
@@ -16,4 +17,8 @@ public interface StorageService {
     FileResponseDto uploadFile(FileRequestDto fileRequestDto, UUID userId);
 
     List<FileResponseDto> getFilesByWorkspace(UUID workspaceId, UUID userUuid);
+
+    void renameFile(UUID fileId, FileRenameRequestDto dto, UUID userId);
+
+    void deleteFile(UUID fileId, UUID workspaceId, UUID userId);
 }

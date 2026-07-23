@@ -18,6 +18,9 @@ public class RabbitMqConfig {
     public static final String CHAT_ROUTING_KEY = "nexis.chat.routing.key";
     public static final String TOPIC_EXCHANGE = "nexis.exchange";
 
+    public static final String FILE_QUEUE = "nexis.file.queue";
+    public static final String FILE_ROUTING_KEY = "nexis.file.events";
+
     public static final String RESULT_QUEUE = "nexis.result.queue";
     public static final String RESULT_ROUTING_KEY = "nexis.result.routing.key";
 
@@ -110,5 +113,17 @@ public class RabbitMqConfig {
         RabbitTemplate template = new RabbitTemplate(connectionFactory);
         template.setMessageConverter(rabbitConvertor());
         return template;
+    }
+
+    @Bean
+    public Queue fileQueue() {
+        return new Queue(FILE_QUEUE, true);
+    }
+
+    @Bean
+    public Binding fileinding(Queue fileQueue, TopicExchange topicExchange) {
+        return BindingBuilder.bind(fileQueue)
+                .to(topicExchange)
+                .with(FILE_ROUTING_KEY);
     }
 }
