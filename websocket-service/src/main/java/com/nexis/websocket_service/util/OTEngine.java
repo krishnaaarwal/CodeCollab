@@ -50,10 +50,25 @@ public class OTEngine {
         return incoming;
     }
 
+    private static CodeOperation insert_delete(CodeOperation incoming, CodeOperation historical) {
+        if (historical.getPosition() <= incoming.getPosition()) {
+            // A deletion happened before our insert. We MUST shift the insert LEFT.
+            if (incoming.getPosition() < historical.getPosition() + historical.getLength()) {
+                // The insert falls completely inside the deleted chunk. Clamp it to the start of the deletion.
+                incoming.setPosition(historical.getPosition());
+            } else {
+                incoming.setPosition(incoming.getPosition() - historical.getLength());
+            }
+        }
+        return incoming;
+    }
+
     private static CodeOperation delete_insert(CodeOperation incoming, CodeOperation historical) {
-        if (historical.getPosition() < incoming.getPosition()) {
-            int newPosition = Math.max(historical.getPosition(), incoming.getPosition() - historical.getLength());
-            incoming.setPosition(newPosition);
+        if (historical.getPosition() <= incoming.getPosition()) {
+            // An insertion happened before our delete. We MUST shift the delete RIGHT.
+            int shiftAmount = historical.getCode().length();
+            incoming.setPosition(incoming.getPosition() + shiftAmount);
+        }
 
                         /*
             Logic:  Agar historical highlight index 2 to 8 and press backspace and income insert at 5
@@ -61,15 +76,6 @@ public class OTEngine {
             calculates incoming.setPosition(5 - 6) = -1    -> IndexOutOfBoundException
 
              */
-        }
-        return incoming;
-    }
-
-    private static CodeOperation insert_delete(CodeOperation incoming, CodeOperation historical) {
-        if (historical.getPosition() <= incoming.getPosition()) {
-            int codeLength = historical.getCode().length();
-            incoming.setPosition(incoming.getPosition() + codeLength);
-        }
         return incoming;
     }
 

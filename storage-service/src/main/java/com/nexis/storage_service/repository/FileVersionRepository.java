@@ -9,4 +9,10 @@ import java.util.UUID;
 public interface FileVersionRepository extends JpaRepository<FileVersionEntity,UUID> {
 
     Optional<FileVersionEntity> findByFileIdAndVersionAndStorageKey(UUID uuid, int i, String expectedStorageKey);
+    // Add this new method signature:
+    Optional<FileVersionEntity> findFirstByFileIdAndVersionAndStorageKeyOrderByCreatedAtDesc(
+            UUID fileId,
+            Integer version,
+            String storageKey
+    );
 }

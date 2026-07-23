@@ -46,7 +46,7 @@ public class CodeExecutionWorker {
         result.setWorkspaceId(job.getWorkspaceId());
 
         // Step 5: Update the database with the result's stdout, stderr, and final status. Update completedAt. Save it.
-        job.setStatus(result.getStatusType());
+        job.setStatus(result.getStatus());
         job.setOutput(result.getOutput());
         job.setError(result.getError());
         job.setCompletedAt(LocalDateTime.now());

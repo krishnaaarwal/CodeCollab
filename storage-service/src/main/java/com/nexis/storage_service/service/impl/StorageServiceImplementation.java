@@ -110,10 +110,10 @@ public class StorageServiceImplementation implements StorageService {
         String expectedStorageKey = "workspaces/" + dto.workspaceId() + "/files/" + dto.fileId() + "/version_" + dto.versionNum();
 
         FileVersionEntity pendingVersion = fileVersionRepository
-                .findByFileIdAndVersionAndStorageKey(dto.fileId(), dto.versionNum(), expectedStorageKey)
+                .findFirstByFileIdAndVersionAndStorageKeyOrderByCreatedAtDesc(dto.fileId(), dto.versionNum(), expectedStorageKey)
                 .orElseThrow(() -> {
-                    log.error("Malicious or corrupt confirmation: Intent log missing for File: {}, Version: {}", dto.fileId(), dto.versionNum());
-                    return new UploadIntentNotFoundException("Upload intent log not found or tampered with.");
+                    log.error("Malicious or corrupt confirmation: Intent log missing...");
+                    return new UploadIntentNotFoundException("Upload intent log not found.");
                 });
 
         if (pendingVersion.getFileStatus() != FileStatus.PENDING) {
