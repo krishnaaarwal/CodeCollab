@@ -46,7 +46,7 @@ public class OperationalTransformService {
                             .collect(Collectors.toList());
 
                     for (CodeOperation historicalOp : history) {
-                        if (historicalOp.getVersion() >= incomingOp.getVersion()) {
+                        if (historicalOp.getVersion() > incomingOp.getVersion()) {
                             incomingOp = OTEngine.transform(incomingOp, historicalOp);
                         }
                     }

@@ -11,17 +11,20 @@ public class OTEngine {
         }
 
         if (historical.getOperationType().equals(OperationType.INSERT)) {
-            //RULE 1: INSERT VS INSERT
+            // RULE 1: historical = INSERT, incoming = INSERT
             if (incoming.getOperationType().equals(OperationType.INSERT)) {
                 return insert_insert(incoming, historical);
-            }//RULE 2: INSERT VS DELETE
+            }
+            // RULE 2: historical = INSERT, incoming = DELETE
             else {
                 return insert_delete(incoming, historical);
             }
-        } else {//RULE 3: DELETE VS INSERT
+        } else {
+            // RULE 3: historical = DELETE, incoming = INSERT
             if (incoming.getOperationType().equals(OperationType.INSERT)) {
                 return delete_insert(incoming, historical);
-            }//RULE 4: DELETE VS DELETE
+            }
+            // RULE 4: historical = DELETE, incoming = DELETE
             else {
                 return delete_delete(incoming, historical);
             }
@@ -34,11 +37,9 @@ public class OTEngine {
             int incEnd = incoming.getPosition() + incoming.getLength();
 
             if (histEnd >= incEnd) {
-                // The historical deletion completely swallowed the incoming deletion.
                 incoming.setOperationType(OperationType.RETAIN);
                 incoming.setLength(0);
             } else {
-                // CLAUDE'S FIX: Shrink the incoming length by the overlap amount
                 if (incoming.getPosition() < histEnd) {
                     int overlap = histEnd - incoming.getPosition();
                     incoming.setLength(incoming.getLength() - overlap);
@@ -50,32 +51,28 @@ public class OTEngine {
         return incoming;
     }
 
+    // FIXED: historical = INSERT, incoming = DELETE
     private static CodeOperation insert_delete(CodeOperation incoming, CodeOperation historical) {
         if (historical.getPosition() <= incoming.getPosition()) {
-            // A deletion happened before our insert. We MUST shift the insert LEFT.
-            if (incoming.getPosition() < historical.getPosition() + historical.getLength()) {
-                // The insert falls completely inside the deleted chunk. Clamp it to the start of the deletion.
-                incoming.setPosition(historical.getPosition());
-            } else {
-                incoming.setPosition(incoming.getPosition() - historical.getLength());
-            }
+            // An insertion happened before our deletion. Shift the deletion RIGHT.
+            int shiftAmount = historical.getCode().length();
+            incoming.setPosition(incoming.getPosition() + shiftAmount);
         }
         return incoming;
     }
 
+    // FIXED: historical = DELETE, incoming = INSERT
     private static CodeOperation delete_insert(CodeOperation incoming, CodeOperation historical) {
         if (historical.getPosition() <= incoming.getPosition()) {
-            // An insertion happened before our delete. We MUST shift the delete RIGHT.
-            int shiftAmount = historical.getCode().length();
-            incoming.setPosition(incoming.getPosition() + shiftAmount);
+            // A deletion happened before our insertion. Shift the insertion LEFT.
+            if (incoming.getPosition() < historical.getPosition() + historical.getLength()) {
+                // Insertion falls inside the deleted chunk. Clamp it to the start of the deletion.
+                incoming.setPosition(historical.getPosition());
+            } else {
+                // Deletion was entirely before our insertion.
+                incoming.setPosition(incoming.getPosition() - historical.getLength());
+            }
         }
-
-                        /*
-            Logic:  Agar historical highlight index 2 to 8 and press backspace and income insert at 5
-            Then historic.getpostion(2) < incoming.getPostion(5)
-            calculates incoming.setPosition(5 - 6) = -1    -> IndexOutOfBoundException
-
-             */
         return incoming;
     }
 
@@ -85,9 +82,8 @@ public class OTEngine {
             incoming.setPosition(incoming.getPosition() + codeLength);
 
         } else if (historical.getPosition() == incoming.getPosition()) {
-            // TIE-BREAKER FIX: Lexicographical UUID comparison to guarantee identical state
+            // TIE-BREAKER: Lexicographical UUID comparison to guarantee identical state
             int userComparison = incoming.getUserId().toString().compareTo(historical.getUserId().toString());
-
             if (userComparison > 0) {
                 int codeLength = historical.getCode().length();
                 incoming.setPosition(incoming.getPosition() + codeLength);
