@@ -16,10 +16,9 @@ import static org.hibernate.jpa.HibernateHints.HINT_FETCH_SIZE;
 public interface SessionEventsRepository extends JpaRepository<SessionEventsEntity,Long> {
 
     @QueryHints(value = {
-            // Enforces that PostgreSQL driver fetches exactly 100 rows at a time over the network
             @QueryHint(name = HINT_FETCH_SIZE, value = "100")
     })
-    @Query("SELECT e FROM SessionEventsEntity e WHERE e.sessionId = :sessionId ORDER BY e.timestamp ASC")
-    Stream<SessionEventsEntity> streamAllBySessionIdOrderByTimestampAsc(@Param("sessionId") UUID sessionId);
+    @Query("SELECT e FROM SessionEventsEntity e WHERE e.sessionId = :sessionId ORDER BY e.id ASC")
+    Stream<SessionEventsEntity> streamAllBySessionIdOrderByIdAsc(@Param("sessionId") UUID sessionId);
 
 }

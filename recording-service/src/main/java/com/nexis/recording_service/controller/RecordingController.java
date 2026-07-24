@@ -10,6 +10,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -46,6 +48,12 @@ public class RecordingController {
                 .body(outputStream -> {
                     recordingService.streamSessionEvents(id, outputStream);
                 });
+    }
+
+    // In RecordingController.java
+    @GetMapping("/workspace/{workspaceId}")
+    public ResponseEntity<List<SessionResponseDto>> getWorkspaceSessions(@PathVariable UUID workspaceId) {
+        return ResponseEntity.ok(recordingService.getSessionsByWorkspace(workspaceId));
     }
 
 }

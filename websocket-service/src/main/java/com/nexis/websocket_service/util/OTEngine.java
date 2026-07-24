@@ -10,85 +10,74 @@ public class OTEngine {
             return incoming;
         }
 
-        if (historical.getOperationType().equals(OperationType.INSERT)) {
-            // RULE 1: historical = INSERT, incoming = INSERT
-            if (incoming.getOperationType().equals(OperationType.INSERT)) {
+        if (historical.getOperationType() == OperationType.INSERT) {
+            if (incoming.getOperationType() == OperationType.INSERT) {
                 return insert_insert(incoming, historical);
-            }
-            // RULE 2: historical = INSERT, incoming = DELETE
-            else {
-                return insert_delete(incoming, historical);
+            } else {
+                return delete_insert(incoming, historical); // Incoming=DELETE, Hist=INSERT
             }
         } else {
-            // RULE 3: historical = DELETE, incoming = INSERT
-            if (incoming.getOperationType().equals(OperationType.INSERT)) {
-                return delete_insert(incoming, historical);
-            }
-            // RULE 4: historical = DELETE, incoming = DELETE
-            else {
+            if (incoming.getOperationType() == OperationType.INSERT) {
+                return insert_delete(incoming, historical); // Incoming=INSERT, Hist=DELETE
+            } else {
                 return delete_delete(incoming, historical);
             }
         }
     }
 
-    private static CodeOperation delete_delete(CodeOperation incoming, CodeOperation historical) {
-        if (historical.getPosition() <= incoming.getPosition()) {
-            int histEnd = historical.getPosition() + historical.getLength();
-            int incEnd = incoming.getPosition() + incoming.getLength();
+    private static CodeOperation insert_insert(CodeOperation inc, CodeOperation hist) {
+        if (hist.getPosition() < inc.getPosition() ||
+                (hist.getPosition().equals(inc.getPosition()) && inc.getUserId().compareTo(hist.getUserId()) > 0)) {
+            // Historical text was inserted before us. Shift our insert to the right.
+            inc.setPosition(inc.getPosition() + hist.getCode().length());
+        }
+        return inc;
+    }
 
-            if (histEnd >= incEnd) {
-                incoming.setOperationType(OperationType.RETAIN);
-                incoming.setLength(0);
+    private static CodeOperation insert_delete(CodeOperation inc, CodeOperation hist) {
+        // Hist is DELETE. Inc is INSERT.
+        if (hist.getPosition() <= inc.getPosition()) {
+            if (inc.getPosition() < hist.getPosition() + hist.getLength()) {
+                // We are trying to insert inside a region that was just deleted. Shift to the start of the deletion.
+                inc.setPosition(hist.getPosition());
             } else {
-                if (incoming.getPosition() < histEnd) {
-                    int overlap = histEnd - incoming.getPosition();
-                    incoming.setLength(incoming.getLength() - overlap);
-                }
-                int newPosition = Math.max(historical.getPosition(), incoming.getPosition() - historical.getLength());
-                incoming.setPosition(newPosition);
+                // Historical deletion happened entirely before us. Shift left by the deleted amount.
+                inc.setPosition(inc.getPosition() - hist.getLength());
             }
         }
-        return incoming;
+        return inc;
     }
 
-    // FIXED: historical = INSERT, incoming = DELETE
-    private static CodeOperation insert_delete(CodeOperation incoming, CodeOperation historical) {
-        if (historical.getPosition() <= incoming.getPosition()) {
-            // An insertion happened before our deletion. Shift the deletion RIGHT.
-            int shiftAmount = historical.getCode().length();
-            incoming.setPosition(incoming.getPosition() + shiftAmount);
+    private static CodeOperation delete_insert(CodeOperation inc, CodeOperation hist) {
+        // Hist is INSERT. Inc is DELETE.
+        if (hist.getPosition() <= inc.getPosition()) {
+            // Hist inserted text BEFORE our deletion. Shift our deletion right.
+            inc.setPosition(inc.getPosition() + hist.getCode().length());
+        } else if (hist.getPosition() < inc.getPosition() + inc.getLength()) {
+            // Hist inserted text INSIDE the range we are trying to delete.
+            // Expand our deletion length to swallow the newly inserted text too.
+            inc.setLength(inc.getLength() + hist.getCode().length());
         }
-        return incoming;
+        return inc;
     }
 
-    // FIXED: historical = DELETE, incoming = INSERT
-    private static CodeOperation delete_insert(CodeOperation incoming, CodeOperation historical) {
-        if (historical.getPosition() <= incoming.getPosition()) {
-            // A deletion happened before our insertion. Shift the insertion LEFT.
-            if (incoming.getPosition() < historical.getPosition() + historical.getLength()) {
-                // Insertion falls inside the deleted chunk. Clamp it to the start of the deletion.
-                incoming.setPosition(historical.getPosition());
+    private static CodeOperation delete_delete(CodeOperation inc, CodeOperation hist) {
+        // Both are DELETE.
+        if (hist.getPosition() <= inc.getPosition()) {
+            if (inc.getPosition() < hist.getPosition() + hist.getLength()) {
+                // Deletions overlap. Shrink our deletion length by the overlapping amount.
+                int overlap = Math.min(inc.getPosition() + inc.getLength(), hist.getPosition() + hist.getLength()) - inc.getPosition();
+                inc.setLength(inc.getLength() - overlap);
+                inc.setPosition(hist.getPosition());
             } else {
-                // Deletion was entirely before our insertion.
-                incoming.setPosition(incoming.getPosition() - historical.getLength());
+                // Hist deletion happened entirely before us. Shift left.
+                inc.setPosition(inc.getPosition() - hist.getLength());
             }
+        } else if (hist.getPosition() < inc.getPosition() + inc.getLength()) {
+            // Hist starts INSIDE our deletion range.
+            int overlap = Math.min(inc.getPosition() + inc.getLength(), hist.getPosition() + hist.getLength()) - hist.getPosition();
+            inc.setLength(inc.getLength() - overlap);
         }
-        return incoming;
-    }
-
-    private static CodeOperation insert_insert(CodeOperation incoming, CodeOperation historical) {
-        if (historical.getPosition() < incoming.getPosition()) {
-            int codeLength = historical.getCode().length();
-            incoming.setPosition(incoming.getPosition() + codeLength);
-
-        } else if (historical.getPosition() == incoming.getPosition()) {
-            // TIE-BREAKER: Lexicographical UUID comparison to guarantee identical state
-            int userComparison = incoming.getUserId().toString().compareTo(historical.getUserId().toString());
-            if (userComparison > 0) {
-                int codeLength = historical.getCode().length();
-                incoming.setPosition(incoming.getPosition() + codeLength);
-            }
-        }
-        return incoming;
+        return inc;
     }
 }

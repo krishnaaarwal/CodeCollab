@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -77,7 +78,7 @@ public class RecordingService {
         @Transactional(readOnly = true) // Crucial for database cursors
         public void streamSessionEvents(UUID sessionId, java.io.OutputStream outputStream) {
             // 1. Invoke the streaming repository method inside a try-with-resources block
-            try (Stream<SessionEventsEntity> eventStream = sessionEventsRepository.streamAllBySessionIdOrderByTimestampAsc(sessionId)) {
+            try (Stream<SessionEventsEntity> eventStream = sessionEventsRepository.streamAllBySessionIdOrderByIdAsc(sessionId)) {
 
                 eventStream.forEach(event -> {
                     try {
@@ -99,5 +100,12 @@ public class RecordingService {
 
     public void validate(UUID id) throws IllegalArgumentException{
         if(!sessionRepository.existsById(id)) throw new IllegalArgumentException("Session Id does not exist"+id);
+    }
+
+    public java.util.List<SessionResponseDto> getSessionsByWorkspace(UUID workspaceId) {
+        return sessionRepository.findByWorkspaceIdOrderByStartedAtDesc(workspaceId)
+                .stream()
+                .map(SessionResponseDto::new)
+                .toList();
     }
 }
