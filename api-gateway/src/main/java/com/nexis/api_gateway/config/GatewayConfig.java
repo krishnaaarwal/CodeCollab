@@ -77,7 +77,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(ipKeyResolver()))
                                 .circuitBreaker(c -> c.setName("auth-public").setFallbackUri("forward:/fallback/auth"))
                         )
-                        .uri("lb://auth-service")
+                        .uri("http://auth-service:8081")
                 )
 
                 // ROUTE B: PROTECTED AUTH & WORKSPACE MANAGEMENT
@@ -90,7 +90,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(userIdKeyResolver()))
                                 .circuitBreaker(c -> c.setName("auth-protected").setFallbackUri("forward:/fallback/auth"))
                         )
-                        .uri("lb://auth-service")
+                        .uri("http://auth-service:8081")
                 )
 
                 // =========================================================================
@@ -103,7 +103,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(userIdKeyResolver()))
                                 .circuitBreaker(c -> c.setName("execution-service").setFallbackUri("forward:/fallback/execute"))
                         )
-                        .uri("lb://execution-service")
+                        .uri("http://execution-service:8083")
                 )
 
                 // =========================================================================
@@ -116,7 +116,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(userIdKeyResolver()))
                                 .circuitBreaker(c -> c.setName("storage-service").setFallbackUri("forward:/fallback/storage"))
                         )
-                        .uri("lb://storage-service")
+                        .uri("http://storage-service:8084")
                 )
 
                 // =========================================================================
@@ -129,7 +129,7 @@ public class GatewayConfig {
                                 .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(userIdKeyResolver()))
                                 .circuitBreaker(c -> c.setName("recording-service").setFallbackUri("forward:/fallback/recording"))
                         )
-                        .uri("lb://recording-service")
+                        .uri("http://recording-service:8085")
                 )
                 .build();
     }
