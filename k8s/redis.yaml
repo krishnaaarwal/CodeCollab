@@ -1,0 +1,66 @@
+# 1. The Storage Claim (PVC)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: nexis
+spec:
+  accessModes:
+    - ReadWriteOnce # Only one node can read/write to this volume at a time
+  resources:
+    requests:
+      storage: 1Gi # Give Redis 1 Gigabyte of storage
+
+---
+# 2. The Deployment (The Pod)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexis-redis
+  namespace: nexis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7
+        ports:
+        - containerPort: 6379
+        # Injecting the password securely from your secret
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: redis.password
+        # Running the exact command from your Docker Compose, injecting the env var
+        command: ["/bin/sh", "-c"]
+        args: ["redis-server --appendonly yes --requirepass $REDIS_PASSWORD"]
+        volumeMounts:
+        - name: redis-storage
+          mountPath: /data
+      volumes:
+      - name: redis-storage
+        persistentVolumeClaim:
+          claimName: redis-pvc
+
+---
+# 3. The Service (The Internal Router)
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexis-redis-service
+  namespace: nexis
+spec:
+  selector:
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379

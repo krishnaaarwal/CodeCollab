@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+/* ============================================================
+   NEXIS — Premium Minimalist Design System.
+   Deep cool grays (Zinc), subtle borders, and modern blue accents.
+   ============================================================ */
+
+@theme {
+  /* Deep Dark Theme */
+  --color-void: #09090b;           /* Zinc 950 */
+  --color-surface: #18181b;        /* Zinc 900 */
+  --color-surface-raised: #27272a; /* Zinc 800 */
+  --color-surface-hover: #27272a;  /* Zinc 800 */
+
+  /* Modern Accents */
+  --color-primary: #3b82f6;        /* Blue 500 */
+  --color-primary-dim: #1e3a8a;    /* Blue 900 */
+  --color-primary-bright: #60a5fa; /* Blue 400 */
+  --color-primary-faint: rgba(59, 130, 246, 0.15);
+
+  /* Collaborator Colors */
+  --color-collab-cyan: #2dd4bf;    /* Teal 400 */
+  --color-collab-magenta: #f472b6; /* Pink 400 */
+  --color-collab-violet: #a78bfa;  /* Violet 400 */
+
+  /* Signals */
+  --color-signal-red: #ef4444;     /* Red 500 */
+  --color-signal-green: #10b981;   /* Emerald 500 */
+
+  /* Typography Colors */
+  --color-ink: #f4f4f5;            /* Zinc 50 */
+  --color-ink-dim: #a1a1aa;        /* Zinc 400 */
+  --color-ink-faint: #52525b;      /* Zinc 600 */
+  --color-border: #27272a;         /* Zinc 800 */
+
+  /* Typography Families */
+  --font-display: "Inter", "Geist", system-ui, sans-serif;
+  --font-body: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-void);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: var(--color-ink);
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+a:hover {
+  color: var(--color-primary-bright);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--color-primary-faint);
+  color: var(--color-primary-bright);
+}
+
+.glow-text {
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+/* ---------------- IDE Specific Overrides ---------------- */
+.ide-shell {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  background: var(--color-void);
+}
+.ide-shell.chat-open {
+  grid-template-columns: 240px 1fr 320px;
+}
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--color-ink-dim);
+  cursor: pointer;
+  display: inline-flex;
+  padding: 0.35rem;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+.icon-btn:hover {
+  color: var(--color-ink);
+  background: var(--color-surface);
+}
+
+/* ---------------- Shadows ---------------- */
+.toast, .chat-bubble {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 1px var(--color-border);
+}
+
+/* ---------------- Remote collaborator cursors ---------------- */
+.remote-caret {
+  position: relative;
+}
+.remote-caret::before {
+  content: "";
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  background: var(--color-collab-cyan);
+}
+.remote-caret-magenta::before { background: var(--color-collab-magenta); }
+.remote-caret-violet::before { background: var(--color-collab-violet); }
+
+.remote-caret-label {
+  font-family: var(--font-display); 
+  font-size: 11px;
+  font-weight: 600;
+  color: #000; 
+  background: var(--color-collab-cyan);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border-bottom-left-radius: 0; 
+  white-space: nowrap;
+  transform: translateY(-100%);
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); 
+  z-index: 50; 
+}
+.remote-caret-label-magenta { background: var(--color-collab-magenta); }
+.remote-caret-label-violet { background: var(--color-collab-violet); }
+
+/* ---------------- Animations ---------------- */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.animate-spin {
+  animation: spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

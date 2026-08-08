@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nexis-ingress
+  namespace: nexis
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "websocket-service"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: nexis.local
+    http:
+      paths:
+      # --- API GATEWAY ROUTE ---
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: api-gateway
+            port:
+              number: 8080
+              
+      # --- WEBSOCKET ROUTE ---
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: websocket-service
+            port:
+              number: 8082
+
+      # --- FRONTEND ROUTE (Catch-all for the UI) ---
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nexis-frontend
+            port:
+              number: 80

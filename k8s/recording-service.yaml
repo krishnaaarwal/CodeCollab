@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recording-service
+  namespace: nexis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recording-service
+  template:
+    metadata:
+      labels:
+        app: recording-service
+    spec:
+      containers:
+      - name: recording-service
+        image: nexis-recording-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8085
+        env:
+        # --- DISABLE EUREKA ---
+        - name: EUREKA_CLIENT_ENABLED
+          value: "false"
+        - name: EUREKA_CLIENT_FETCH_REGISTRY
+          value: "false"
+        - name: EUREKA_CLIENT_REGISTER_WITH_EUREKA
+          value: "false"
+
+        # --- DATABASE INJECTION ---
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://recording-db-service:5432/recording-db"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: postgres
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: database.password
+
+        # --- RABBITMQ INJECTION ---
+        - name: SPRING_RABBITMQ_HOST
+          value: "nexis-rabbitmq-service"
+        - name: SPRING_RABBITMQ_PORT
+          value: "5672"
+        - name: SPRING_RABBITMQ_USERNAME
+          value: "rabbitmq"
+        - name: SPRING_RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: rabbitmq.password
+
+        # --- REDIS INJECTION ---
+        - name: SPRING_DATA_REDIS_HOST
+          value: "nexis-redis-service"
+        - name: SPRING_DATA_REDIS_PORT
+          value: "6379"
+        - name: SPRING_DATA_REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: redis.password
+
+        # --- APP SECRETS INJECTION ---
+        - name: JWT_SECRETKEY
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: jwt.secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recording-service
+  namespace: nexis
+spec:
+  selector:
+    app: recording-service
+  ports:
+    - port: 8085
+      targetPort: 8085

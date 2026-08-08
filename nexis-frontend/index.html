@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      // sockjs-client (used by the collaboration WebSocket layer) references
+      // the bare Node.js `global` identifier at module-load time. Browsers
+      // don't have it. This runs as the first thing in the document — a
+      // plain synchronous (non-module) script — so it's guaranteed to exist
+      // before the module graph below ever starts loading, regardless of
+      // where a build tool later moves those module script tags.
+      window.global = window.global || window;
+    </script>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Nexis — real-time collaborative IDE" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <title>Nexis — Collaborative IDE</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

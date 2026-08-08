@@ -71,8 +71,8 @@ public class GatewayConfig {
                                 "/api/auth/refresh",
                                 "/api/auth/forgot-password",
                                 "/api/auth/reset-password",
-                                "/oauth2/**",
-                                "/login/oauth2/code/**")
+                                "/api/oauth2/**",
+                                "/api/login/oauth2/code/**")
                         .filters(f -> f
                                 .requestRateLimiter(c -> c.setRateLimiter(customRedisRateLimiter()).setKeyResolver(ipKeyResolver()))
                                 .circuitBreaker(c -> c.setName("auth-public").setFallbackUri("forward:/fallback/auth"))
@@ -138,15 +138,14 @@ public class GatewayConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
 
-        corsConfig.setAllowedOriginPatterns(List.of("http://localhost:*"));
+        corsConfig.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://nexis.local"
+        ));
 
         corsConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-
         corsConfig.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-User-Id"));
-
         corsConfig.setAllowCredentials(true);
-
-        // Let the frontend read the incoming custom headers if required
         corsConfig.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

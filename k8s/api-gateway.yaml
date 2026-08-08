@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  namespace: nexis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+      - name: api-gateway
+        image: nexis-api-gateway:latest
+        imagePullPolicy: Never  # CRITICAL: Use the local image!
+        ports:
+        - containerPort: 8080
+        env:
+        # --- DISABLE EUREKA ---
+        - name: EUREKA_CLIENT_ENABLED
+          value: "false"
+        - name: EUREKA_CLIENT_FETCH_REGISTRY
+          value: "false"
+        - name: EUREKA_CLIENT_REGISTER_WITH_EUREKA
+          value: "false"
+        # --- REDIS INJECTION (For Rate Limiting) ---
+        - name: SPRING_DATA_REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: nexis-config
+              key: redis.host
+        - name: SPRING_DATA_REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: nexis-config
+              key: redis.port
+        - name: SPRING_DATA_REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: redis.password
+              
+        # --- APP SECRETS INJECTION (For the JWT Filter) ---
+        - name: JWT_SECRETKEY
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: jwt.secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: nexis
+spec:
+  selector:
+    app: api-gateway
+  ports:
+    - port: 8080
+      targetPort: 8080

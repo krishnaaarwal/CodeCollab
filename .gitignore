@@ -1,0 +1,10 @@
+# Ignored Architecture & Secrets
+eureka-server/
+
+# Kubernetes Secrets & Swap Files
+k8s/*secrets*.yaml
+k8s/*.swp
+
+# Frontend Secrets
+nexis-frontend/.env*
+nexis-frontend/node_modules/

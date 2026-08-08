@@ -1,0 +1,258 @@
+# ==========================================
+# 1. AUTH DATABASE
+# ==========================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: auth-db-pvc
+  namespace: nexis
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-db
+  namespace: nexis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-db
+  template:
+    metadata:
+      labels:
+        app: auth-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: database.password
+        - name: POSTGRES_DB
+          value: auth-db
+        volumeMounts:
+        - name: auth-db-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: auth-db-storage
+        persistentVolumeClaim:
+          claimName: auth-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-db-service
+  namespace: nexis
+spec:
+  selector:
+    app: auth-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+# ==========================================
+# 2. EXECUTION DATABASE
+# ==========================================
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: execution-db-pvc
+  namespace: nexis
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: execution-db
+  namespace: nexis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: execution-db
+  template:
+    metadata:
+      labels:
+        app: execution-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: database.password
+        - name: POSTGRES_DB
+          value: execution-db
+        volumeMounts:
+        - name: execution-db-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: execution-db-storage
+        persistentVolumeClaim:
+          claimName: execution-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: execution-db-service
+  namespace: nexis
+spec:
+  selector:
+    app: execution-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+# ==========================================
+# 3. STORAGE DATABASE
+# ==========================================
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: storage-db-pvc
+  namespace: nexis
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-db
+  namespace: nexis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storage-db
+  template:
+    metadata:
+      labels:
+        app: storage-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: database.password
+        - name: POSTGRES_DB
+          value: storage-db
+        volumeMounts:
+        - name: storage-db-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: storage-db-storage
+        persistentVolumeClaim:
+          claimName: storage-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage-db-service
+  namespace: nexis
+spec:
+  selector:
+    app: storage-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+# ==========================================
+# 4. RECORDING DATABASE
+# ==========================================
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: recording-db-pvc
+  namespace: nexis
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recording-db
+  namespace: nexis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recording-db
+  template:
+    metadata:
+      labels:
+        app: recording-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: database.password
+        - name: POSTGRES_DB
+          value: recording-db
+        volumeMounts:
+        - name: recording-db-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: recording-db-storage
+        persistentVolumeClaim:
+          claimName: recording-db-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recording-db-service
+  namespace: nexis
+spec:
+  selector:
+    app: recording-db
+  ports:
+    - port: 5432
+      targetPort: 5432

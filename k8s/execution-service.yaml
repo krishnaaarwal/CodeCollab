@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: execution-service
+  namespace: nexis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: execution-service
+  template:
+    metadata:
+      labels:
+        app: execution-service
+    spec:
+      containers:
+      - name: execution-service
+        image: nexis-execution-service:latest
+        imagePullPolicy: Never
+        
+        # ADD THESE TWO LINES
+        securityContext:
+          runAsUser: 0
+          
+        ports:
+        - containerPort: 8083
+        
+        # 1. Container-level volume mount
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+          
+        env:
+        # --- DISABLE EUREKA ---
+        - name: EUREKA_CLIENT_ENABLED
+          value: "false"
+        - name: EUREKA_CLIENT_FETCH_REGISTRY
+          value: "false"
+        - name: EUREKA_CLIENT_REGISTER_WITH_EUREKA
+          value: "false"
+
+        # --- DATABASE INJECTION ---
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://execution-db-service:5432/execution-db"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: postgres
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: database.password
+
+        # --- RABBITMQ INJECTION ---
+        - name: SPRING_RABBITMQ_HOST
+          value: "nexis-rabbitmq-service"
+        - name: SPRING_RABBITMQ_PORT
+          value: "5672"
+        - name: SPRING_RABBITMQ_USERNAME
+          value: "rabbitmq"
+        - name: SPRING_RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: rabbitmq.password
+
+        # --- APP SECRETS INJECTION ---
+        - name: JWT_SECRETKEY
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: jwt.secret
+              
+      # 2. Pod-level volumes (Notice how it lines up with 'containers' now!)
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: execution-service
+  namespace: nexis
+spec:
+  selector:
+    app: execution-service
+  ports:
+    - port: 8083
+      targetPort: 8083

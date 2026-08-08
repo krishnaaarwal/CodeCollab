@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nexis-frontend
+  namespace: nexis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nexis-frontend
+  template:
+    metadata:
+      labels:
+        app: nexis-frontend
+    spec:
+      containers:
+      - name: nexis-frontend
+        image: nexis-frontend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nexis-frontend
+  namespace: nexis
+spec:
+  selector:
+    app: nexis-frontend
+  ports:
+    - port: 80
+      targetPort: 80

@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-service
+  namespace: nexis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: storage-service
+  template:
+    metadata:
+      labels:
+        app: storage-service
+    spec:
+      containers:
+      - name: storage-service
+        image: nexis-storage-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8084
+        env:
+        # --- DISABLE EUREKA ---
+        - name: EUREKA_CLIENT_ENABLED
+          value: "false"
+        - name: EUREKA_CLIENT_FETCH_REGISTRY
+          value: "false"
+        - name: EUREKA_CLIENT_REGISTER_WITH_EUREKA
+          value: "false"
+
+        # --- DATABASE INJECTION ---
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:postgresql://storage-db-service:5432/storage-db"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: postgres
+        - name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: database.password
+
+        # --- RABBITMQ INJECTION ---
+        - name: SPRING_RABBITMQ_HOST
+          value: "nexis-rabbitmq-service"
+        - name: SPRING_RABBITMQ_PORT
+          value: "5672"
+        - name: SPRING_RABBITMQ_USERNAME
+          value: "rabbitmq"
+        - name: SPRING_RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: rabbitmq.password
+
+        # --- MINIO INJECTION ---
+        - name: NEXIS_STORAGE_S3_ENDPOINT
+          value: "http://nexis-minio:9000"
+
+        # --- APP SECRETS INJECTION ---
+        - name: JWT_SECRETKEY
+          valueFrom:
+            secretKeyRef:
+              name: nexis-secrets
+              key: jwt.secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage-service
+  namespace: nexis
+spec:
+  selector:
+    app: storage-service
+  ports:
+    - port: 8084
+      targetPort: 8084
